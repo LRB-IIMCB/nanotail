@@ -32,7 +32,7 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, dora
     #integer64 set to "numeric" to avoid inconsistences when called from read_polya_multiple
     
     file_header <- read.table(polya_path,nrows=1)
-    if (sum(grepl("pt",file_header))>0) {
+    if (sum(c("pt","reference","ref_start") %in% file_header)==3) {
       message("Seems like output from dorado. ")
       dorado = TRUE
     }
