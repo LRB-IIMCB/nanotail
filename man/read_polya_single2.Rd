@@ -8,7 +8,8 @@ read_polya_single2(
   polya_path,
   gencode = TRUE,
   sample_name = NA,
-  input_type = "nanopolish"
+  input_type = "auto",
+  metadata
 )
 }
 \arguments{

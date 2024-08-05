@@ -95,7 +95,7 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, dora
 #'
 #' @return a [tibble][tibble::tibble-package] with polya predictions
 #'
-read_polya_single2 <- function(polya_path, gencode = TRUE, sample_name = NA, input_type = "auto") {
+read_polya_single2 <- function(polya_path, gencode = TRUE, sample_name = NA, input_type = "auto", metadata) {
     # required asserts
 
     #check if parameters are provided
@@ -114,13 +114,17 @@ read_polya_single2 <- function(polya_path, gencode = TRUE, sample_name = NA, inp
     checkmate::assert_logical(gencode)
 
     
+    
 
     # assert the file in polya_path is not empty:
     if (file.size(polya_path) == 0) {
       stop("File ",polya_path," is empty",call. = FALSE)
     }
   
-  
+    if (!missing(polya_path)) {
+      message("metadata provided as an argument")
+      
+    }
   
     message(paste0("Loading data from ",polya_path))
 
@@ -128,7 +132,7 @@ read_polya_single2 <- function(polya_path, gencode = TRUE, sample_name = NA, inp
     
     
     file_header <- data.table::fread(polya_path,nrows=0,header=T,data.table=F) # read first line to check colnames to determine input type
-    message(file_header)
+    #message(file_header)
     # auto-detect input type
     
     if ((sum(c("reference","ref_start","pt") %in% colnames(file_header))==3)) {
@@ -218,6 +222,9 @@ read_polya_single2 <- function(polya_path, gencode = TRUE, sample_name = NA, inp
     else {
       # if not gencode use contig (mapped reference) as transcript name
       polya_data$transcript <- polya_data$reference
+      # NA for ensembl_transcript_id_version and ensembl_transcript_id to make sure tables are of the same size
+      polya_data$ensembl_transcript_id_version <- NA
+      polya_data$ensembl_transcript_id <- NA
     }
 
     if(!is.na(sample_name)) {
@@ -267,6 +274,10 @@ read_polya_multiple <- function(samples_table,...) {
   assertthat::assert_that("polya_path" %in% colnames(samples_table),msg = "Samples table should contain at least polya_path and sample_name columns")
   assertthat::assert_that("sample_name" %in% colnames(samples_table),msg = "Samples table should contain at least polya_path and sample_name columns")
 
+  
+  
+  
+  
   samples_data <- samples_table %>% dplyr::as.tbl() %>% dplyr::mutate_if(is.character,as.factor) %>% dplyr::mutate(polya_path = as.character(polya_path)) %>% dplyr::group_by(sample_name) %>% dplyr::mutate(polya_contents=purrr::map(polya_path, function(x) read_polya_single(x))) %>% dplyr::ungroup() %>% dplyr::select(-polya_path)
   polya_data <- tidyr::unnest(samples_data)
 
@@ -298,5 +309,102 @@ remove_failed_reads <- function(polya_data) {
   filtered_polya_data <- polya_data %>% dplyr::filter(qc_tag=='PASS')
   return(filtered_polya_data)
 }
+
+
+# with the input table, take the path column and use it to read the content of files paths provided in ths column
+# return the content of the files as a list
+# the name of the list elements should be the same as the sample_name column
+# each element should contain the data element with the content read from the file
+# another element of each list element should be named meta, and contain the metadata of the sample, taken from all remaining columns of the input table
+# use base R function, dplyr or purrr usage is prohibited
+
+#' Reads multiple polyA predictions at once
+#'
+#' @param input_table data.frame or tibble containing samples metadata and paths to files.
+#'
+#' @return a list containing polyA predictions for all specified samples, with metadata provided in samples_table
+#' @export 
+#'
+#' @examples 
+#' \dontrun{
+#' 
+#' read_polya_multiple2(example_sample_table)
+#' 
+#' }
+#' 
+read_polya_multiple2 <- function(input_table) {
+  # check if input_table is provided
+  if (missing(input_table)) {
+    stop("Table is missing. Please provide a valid table argument",
+         call. = FALSE)
+  }
+  # check if input_table is a data.frame
+  checkmate::assert_data_frame(input_table)
+  # if (!is.data.frame(input_table)) {
+  #   stop("Table should be provided as a data.frame",
+  #        call. = FALSE)
+  # }
+  # 
+  
+  # check if input_table has at least two columns
+  if (ncol(input_table) < 2) {
+    stop("Table should have at least two columns",
+         call. = FALSE)
+  }
+  
+  # check if input_table has a column named polya_path
+  if (!("polya_path" %in% colnames(input_table))) {
+    stop("Table should have a column named polya_path",
+         call. = FALSE)
+  }
+  
+  # check if input_table has a column named sample_name
+  if (!("sample_name" %in% colnames(input_table))) {
+    stop("Table should have a column named sample_name",
+         call. = FALSE)
+  }
+  
+  # check if input_table has a column named polya_path which is character
+  if (!all(sapply(input_table$polya_path, is.character))) {
+    stop("Column polya_path should be character",
+         call. = FALSE)
+  }
+  
+  # check if input_table has a column named sample_name which is character
+  if (!all(sapply(input_table$sample_name, is.character))) {
+    stop("Column sample_name should be character",
+         call. = FALSE)
+  }
+  
+  # check if input_table has a column named polya_path which is not empty
+  if (!all(sapply(input_table$polya_path, function(x) nchar(x) > 0))) {
+    stop("Column polya_path should not be empty",
+         call. = FALSE)
+  }
+  
+  # check if input_table has a column named sample_name which is not empty
+  if (!all(sapply(input_table$sample_name, function(x) nchar(x) > 0))) {
+    stop("Column sample_name should not be empty",
+         call. = FALSE)
+  }
+  
+  # read the content of files paths provided in ths column
+  output <- list()
+  for (i in 1:nrow(input_table
+                    )) {
+    output[[input_table$sample_name[i]]] <- list(data = read_polya_single2(input_table$polya_path[i], sample_name = input_table$sample_name[i]))
+    output[[input_table$sample_name[i]]]$meta <- input_table[i, -which(names(input_table) %in% c("polya_path"))]
+  }
+  
+  return(output)
+}
+
+
+
+
+
+
+
+
 
 

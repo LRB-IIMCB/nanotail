@@ -2,7 +2,7 @@
 % Please edit documentation in R/read_polyA_data.R
 \name{read_polya_multiple}
 \alias{read_polya_multiple}
-\title{Reads multiple nanopolish polyA predictions at once}
+\title{Reads multiple polyA predictions at once}
 \usage{
 read_polya_multiple(samples_table, ...)
 }

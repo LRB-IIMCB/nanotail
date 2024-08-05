@@ -32,9 +32,6 @@ stat_median_line(
 
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Helper function for calculating median stat for violin/boxpolot ggplot plots
 }
