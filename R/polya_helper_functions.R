@@ -218,3 +218,64 @@ getmode <- function(x, method ="density", na.rm = FALSE) {
     }
   }
 }  
+
+
+
+#' Load samples information from yaml file
+#' 
+#' @param yaml_path path to the yaml file
+#' 
+#' @return \link{tibble}
+#' @export
+#' 
+#' @examples
+#' \dontrun{
+#' 
+#' load_yaml_samples("path/to/yaml/file")
+#' 
+#' }
+#' 
+load_yaml_samples <- function(yaml_path) {
+  
+  config<-yaml::yaml.load_file(yaml_path)
+  
+  # use checkmate to check if yaml file is correctly formatted
+  checkmate::assert_named(config)
+  checkmate::assert_list(config)
+  
+
+  # read samples information
+  samples_names <- names(config$samples)
+  groups <- levels(factor(sapply(config$samples,function(x) {x$group})))
+  input_samples_table<-data.frame(t(sapply(config$samples,unlist)))
+  if (!"sample_name" %in% colnames(input_samples_table)) {
+    input_samples_table$sample_name <- samples_names  
+  }
+  rownames(input_samples_table) <- NULL
+  # from the input_samples_table do not select columns containing seq_summary, seq_date, kit, guppy, nanopolish, enrichment_method
+  # this should not return error when given column does not exists  
+  # if input_samples_table contains columns seq_summary, seq_date, kit, guppy, nanopolish, enrichment_method, drop them
+  # if there are not such columns, do nothing (but check if such columns are present)
+  if ("seq_summary" %in% colnames(input_samples_table)) {
+    input_samples_table <- input_samples_table %>% dplyr::select(-seq_summary)
+  }
+  if ("seq_date" %in% colnames(input_samples_table)) {
+    input_samples_table <- input_samples_table %>% dplyr::select(-seq_date)
+  }
+  if ("kit" %in% colnames(input_samples_table)) {
+    input_samples_table <- input_samples_table %>% dplyr::select(-kit)
+  }
+  if ("guppy" %in% colnames(input_samples_table)) {
+    input_samples_table <- input_samples_table %>% dplyr::select(-guppy)
+  }
+  if ("nanopolish" %in% colnames(input_samples_table)) {
+    input_samples_table <- input_samples_table %>% dplyr::select(-nanopolish)
+  }
+  if ("enrichment_method" %in% colnames(input_samples_table)) {
+    input_samples_table <- input_samples_table %>% dplyr::select(-enrichment_method)
+  }
+  input_samples_table <- input_samples_table %>% dplyr::select(sample_name,dplyr::everything()) # move sample name to the beginning of table
+  
+  #input_samples_table <- input_samples_table %>% dplyr::select(sample_name,dplyr::everything()) # move sample name to the beginning of table
+  return(input_samples_table)
+}
