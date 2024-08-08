@@ -29,8 +29,13 @@ calculate_polya_stats <- function(polya_data, transcript_id_column = "transcript
   }
 
 
-
-  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+  # assert that polya_data is not an empty data.frame
+  
+  
+  
+  
+  
+  #assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
 
 
 
@@ -133,13 +138,13 @@ stat_codes_list = list(OK = "OK",
 
   available_statistical_tests = c("Wilcoxon","KS","glm")
 
-  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
-
+  # assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+  # 
   assertthat::assert_that(stat_test %in% available_statistical_tests,msg = "Please provide one of available statistical tests (Wilcoxon, KS or glm)")
-  assertthat::assert_that(assertthat::is.number(min_reads),msg = "Non-numeric parameter provided (min_reads)")
-  assertthat::assert_that(assertive::is_a_bool(use_dwell_time),msg="Non-boolean value provided for option use_dwell_time.")
+  # assertthat::assert_that(assertthat::is.number(min_reads),msg = "Non-numeric parameter provided (min_reads)")
+  # assertthat::assert_that(assertive::is_a_bool(use_dwell_time),msg="Non-boolean value provided for option use_dwell_time.")
   assertthat::assert_that(grouping_factor %in% colnames(polya_data),msg=paste0(grouping_factor," is not a column of input dataset"))
-
+  # 
 
 
   # if grouping factor has more than two levels
@@ -285,9 +290,9 @@ summarize_polya <- function(polya_data,summary_factors = c("group"),transcript_i
          call. = FALSE)
   }
 
-  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
-  assertthat::assert_that(assertive::is_character(summary_factors),msg = "Non-character argument is not alowed for `summary factors`. Please provide either string or vector of strings")
-  assertthat::assert_that(all(summary_factors %in% colnames(polya_data)),msg="Non-existent column name provided as the argument (summary_factors)")
+  # assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+  # assertthat::assert_that(assertive::is_character(summary_factors),msg = "Non-character argument is not alowed for `summary factors`. Please provide either string or vector of strings")
+  # assertthat::assert_that(all(summary_factors %in% colnames(polya_data)),msg="Non-existent column name provided as the argument (summary_factors)")
 
   polya_data_summarized <-
     polya_data %>% dplyr::ungroup() %>% dplyr::group_by(.dots = c(transcript_id_column,summary_factors)) %>% dplyr::summarise(
@@ -326,7 +331,7 @@ summarize_polya_per_transcript <- function(polya_data,groupBy=NULL,transcript_id
          call. = FALSE)
   }
   
-  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+  # assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
   #  assertthat::assert_that(assertive::is_character(summary_factors),msg = "Non-character argument is not allowed for `summary factors`. Please provide either string or vector of strings")
   #assertthat::assert_that(all(as.character(summary_factors) %in% colnames(polya_data)),msg="Non-existent column name provided as the argument (summary_factors)")
   
@@ -378,11 +383,11 @@ calculate_pca <- function(polya_data_summarized,parameter="polya_median",transcr
          call. = FALSE)
   }
 
-  assertthat::assert_that(assertive::has_rows(polya_data_summarized),msg = "Empty data.frame provided as an input")
-  assertthat::assert_that(assertive::is_character(parameter),msg = "Non-character argument is not alowed for `parameter`.")
-  assertthat::assert_that(transcript_id_column %in% colnames(polya_data_summarized),msg=paste0("Required `transcript`` column is missing from input dataset."))
-  assertthat::assert_that("sample_name" %in% colnames(polya_data_summarized),msg=paste0("Required `sample_name` column is missing from input dataset."))
-  assertthat::assert_that(parameter %in% colnames(polya_data_summarized),msg=paste0(parameter," is not a column of input dataset."))
+  # assertthat::assert_that(assertive::has_rows(polya_data_summarized),msg = "Empty data.frame provided as an input")
+  # assertthat::assert_that(assertive::is_character(parameter),msg = "Non-character argument is not alowed for `parameter`.")
+  # assertthat::assert_that(transcript_id_column %in% colnames(polya_data_summarized),msg=paste0("Required `transcript`` column is missing from input dataset."))
+  # assertthat::assert_that("sample_name" %in% colnames(polya_data_summarized),msg=paste0("Required `sample_name` column is missing from input dataset."))
+  # assertthat::assert_that(parameter %in% colnames(polya_data_summarized),msg=paste0(parameter," is not a column of input dataset."))
 
   polya_data_summarized <- polya_data_summarized %>% dplyr::select(!!rlang::sym(transcript_id_column),sample_name,!!rlang::sym(parameter)) %>% tidyr::spread(sample_name,!!rlang::sym(parameter)) %>% as.data.frame()
   polya_data_summarized[is.na(polya_data_summarized)] <- 0
@@ -422,7 +427,7 @@ calculate_pca <- function(polya_data_summarized,parameter="polya_median",transcr
 get_nanopolish_processing_info <- function(polya_data,grouping_factor=NA) {
 
 
-  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+  # assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
 
 
   if(!is.na(grouping_factor)) {
@@ -470,8 +475,8 @@ calculate_diff_exp_binom <- function(polya_data,grouping_factor=NA,condition1=NA
          call. = FALSE)
   }
 
-  assertthat::assert_that(assertive::is_a_bool(summarized_input),msg="Non-boolean value provided for option summarized_input")
-  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
+  # assertthat::assert_that(assertive::is_a_bool(summarized_input),msg="Non-boolean value provided for option summarized_input")
+  # assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data.frame provided as an input")
   if (!is.na(grouping_factor)) {
     assertthat::assert_that(grouping_factor %in% colnames(polya_data),msg=paste0(grouping_factor," is not a column of input dataset"))
     if (!is.na(condition1)) {

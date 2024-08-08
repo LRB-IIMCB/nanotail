@@ -26,7 +26,7 @@ annotate_with_annotables <- function(polya_data,genome) {
          call. = FALSE)
   }
 
-  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
+  # assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
 
   tx_to_gene_table = paste0(genome,"_tx2gene")
   # Annotatio join, with last step to deduplicate annotations - remove duplicates which occurs due to e.g multiple entrez ids for each transcript
@@ -65,7 +65,7 @@ annotate_with_biomart <- function(polya_data,attributes_to_get=c('ensembl_transc
          call. = FALSE)
   }
 
-  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
+  # assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
   assertthat::assert_that(class(mart_to_use)=="Mart",msg="Please provide valid mart object")
   assertthat::assert_that(length(attributes)>0,msg="please provide attributes")
 
@@ -115,7 +115,7 @@ annotate_with_org_packages <- function(polya_data,columns_of_annotation=c("GENEN
   # currently thos supported
   valid_org_packages = list("homo_sapiens" = "org.Hs.eg.db", "mus_musculus" = "org.Mm.eg.db","rattus_norvegicus" = "org.rn.eg.db","saccharomyces_cerevisiae" = "org.Sc.sgd.db","caenorhabditis_elegans" = "org.Ce.eg.db")
 
-  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
+  # assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
   assertthat::assert_that(length(columns_of_annotation)>0,msg="please provide columns of annotation")
 
   ensembl_ids = unique(polya_data$ensembl_transcript_id_short)

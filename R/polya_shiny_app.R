@@ -40,7 +40,7 @@ nanoTailApp <- function(polya_table,precomputed_polya_statistics=NA,precomputed_
   }
 
 
-  assertthat::assert_that(assertive::has_rows(polya_table),msg = "Empty data frame provided as an input (polya_table). Please provide the correct polya_table")
+  # assertthat::assert_that(assertive::has_rows(polya_table),msg = "Empty data frame provided as an input (polya_table). Please provide the correct polya_table")
   assertthat::assert_that("polya_length" %in% colnames(polya_table),msg = "Input polya_table should contain polya length predictions. Did you provide valid input?")
   assertthat::assert_that("transcript" %in% colnames(polya_table),msg = "Input polya_table should contain 'transcript' column. Did you provide valid input?")
   assertthat::assert_that("sample_name" %in% colnames(polya_table),msg = "Input polya_table should contain at least `sample_name` column for grouping. If data were read using read_polya_single() function please use read_polya_single(...,sample_name= SAMPLE_NAME ) or read_polya_multiple() to provide metadata")

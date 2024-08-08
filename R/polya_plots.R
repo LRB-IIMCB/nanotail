@@ -355,7 +355,7 @@ plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, cond
   polya_data_summarized_counts_xy <- polya_data_summarized_counts_xy %>% dplyr::filter(!!rlang::sym(condition1)>=min_counts,!!rlang::sym(condition2)>=min_counts,!!rlang::sym(condition1)<=max_counts,!!rlang::sym(condition2)<=max_counts)
 
   if (!is.na(max_counts)) {
-    assertthat::assert_that(assertive::is_numeric(max_counts),msg="Please provide numeric value for max_counts")
+    # assertthat::assert_that(assertive::is_numeric(max_counts),msg="Please provide numeric value for max_counts")
     polya_data_summarized_counts_xy <- polya_data_summarized_counts_xy %>% dplyr::filter(!!rlang::sym(condition1)<=max_counts,!!rlang::sym(condition2)<=max_counts)
   }
 
@@ -368,9 +368,9 @@ plot_counts_scatter <- function(polya_data_summarized, groupingFactor = NA, cond
   }
 
   if (!is.na(repel_elements)) {
-    assertthat::assert_that(assertive::is_numeric(repel_elements),msg="Please provide numeric paraemter for repel_elements")
+    # assertthat::assert_that(assertive::is_numeric(repel_elements),msg="Please provide numeric paraemter for repel_elements")
     if(!is.na(repel_group)) {
-    assertthat::assert_that(assertive::is_numeric(repel_elements),msg="Please provide numeric paraemter for repel_elements")
+    # assertthat::assert_that(assertive::is_numeric(repel_elements),msg="Please provide numeric paraemter for repel_elements")
     counts_scatter_plot <- counts_scatter_plot + ggrepel::geom_text_repel(data=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::filter(!!rlang::sym(points_coloring_factor) == repel_group) %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1)))[1:repel_elements,], ggplot2::aes(label=polya_data_summarized_counts_xy %>% dplyr::ungroup() %>% dplyr::filter(!!rlang::sym(points_coloring_factor) == repel_group) %>% dplyr::arrange(dplyr::desc(!!rlang::sym(condition1))) %>% dplyr::select(!!rlang::sym(transcript_id_column)) %>% as.vector()[1:repel_elements]))
     }
     else {
@@ -402,7 +402,7 @@ plot_nanopolish_qc <- function(nanopolish_processing_info, frequency=TRUE,...) {
          call. = FALSE)
   }
 
-  assertthat::assert_that(assertive::has_rows(nanopolish_processing_info),msg = "Empty data.frame provided as an input")
+  # assertthat::assert_that(assertive::has_rows(nanopolish_processing_info),msg = "Empty data.frame provided as an input")
   basic_colnames = c("qc_tag","n")
   assertthat::assert_that(basic_colnames[1] %in% colnames(nanopolish_processing_info),msg="qc_tag column is missing in the input. Is that valid output of get_nanopolish_processing_info()?")
   assertthat::assert_that(basic_colnames[2] %in% colnames(nanopolish_processing_info),msg="n column is missing in the input. Is that valid output of get_nanopolish_processing_info()?")
@@ -453,7 +453,7 @@ plot_volcano <- function(input_data,transcript_id_column,labels=FALSE,nlabels=10
          call. = FALSE)
   }
 
-  assertthat::assert_that(assertive::has_rows(input_data),msg = "Empty data.frame provided as an input")
+  # assertthat::assert_that(assertive::has_rows(input_data),msg = "Empty data.frame provided as an input")
   assertthat::assert_that("fold_change" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). fold_change column is missing.")
   assertthat::assert_that("padj" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). padj column is missing.")
   assertthat::assert_that("significance" %in% colnames(input_data),msg = "Input table is not a valid input for plot_volcano(). significance column is missing.")
@@ -521,7 +521,7 @@ plot_MA <- function(input_data,transcript_id_column,labels=FALSE,nlabels=10,...)
          call. = FALSE)
   }
 
-  assertthat::assert_that(assertive::has_rows(input_data),msg = "Empty data.frame provided as an input")
+  # assertthat::assert_that(assertive::has_rows(input_data),msg = "Empty data.frame provided as an input")
   assertthat::assert_that("fold_change" %in% colnames(input_data),msg = "Input table is not a valid input for plot_MA(). fold_change column is missing.")
   assertthat::assert_that("mean_expr" %in% colnames(input_data),msg = "Input table is not a valid input for plot_MA(). mean_expr column is missing.")
   assertthat::assert_that("significance" %in% colnames(input_data),msg = "Input table is not a valid input for plot_MA(). significance column is missing.")
@@ -575,7 +575,7 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
          call. = FALSE)
   }
 
-  assertthat::assert_that(assertive::has_rows(annotated_polya_data),msg = "Empty data.frame provided as an input")
+  # assertthat::assert_that(assertive::has_rows(annotated_polya_data),msg = "Empty data.frame provided as an input")
 
 
   if(!is.na(annotation_factor)) {
@@ -645,8 +645,8 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
     if (is.na(scale_x_limit_high)) {
       stop("Please provide both limits for x scale")
     }
-    assertthat::assert_that(assertive::is_numeric(scale_x_limit_low),msg="Please provide numeric value for scale_x_limit_low")
-    assertthat::assert_that(assertive::is_numeric(scale_x_limit_high),msg="Please provide numeric value for scale_x_limit_high")
+    # assertthat::assert_that(assertive::is_numeric(scale_x_limit_low),msg="Please provide numeric value for scale_x_limit_low")
+    # assertthat::assert_that(assertive::is_numeric(scale_x_limit_high),msg="Please provide numeric value for scale_x_limit_high")
     ggplot_object <- ggplot_object + ggplot2::scale_x_continuous(limits=c(scale_x_limit_low,scale_x_limit_high))
   }
 
@@ -655,8 +655,8 @@ plot_annotations_comparison_boxplot <- function(annotated_polya_data,annotation_
     if (is.na(scale_y_limit_high)) {
       stop("Please provide both limits for y scale")
     }
-    assertthat::assert_that(assertive::is_numeric(scale_y_limit_low),msg="Please provide numeric value for scale_y_limit_low")
-    assertthat::assert_that(assertive::is_numeric(scale_y_limit_high),msg="Please provide numeric value for scale_y_limit_high")
+    # assertthat::assert_that(assertive::is_numeric(scale_y_limit_low),msg="Please provide numeric value for scale_y_limit_low")
+    # assertthat::assert_that(assertive::is_numeric(scale_y_limit_high),msg="Please provide numeric value for scale_y_limit_high")
     ggplot_object <- ggplot_object + ggplot2::scale_y_continuous(limits=c(scale_y_limit_low,scale_y_limit_high))
   }
 
