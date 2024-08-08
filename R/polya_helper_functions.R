@@ -13,8 +13,8 @@ gm_mean = function(x, na.rm=TRUE){
 
   assertthat::assert_that(is.vector(x),msg = "Please provide numeric vector as an input for gm_mean")
   assertthat::assert_that(length(x)>0,msg = "Empty vector provided as input")
-  assertthat::assert_that(assertive::is_a_bool(na.rm),msg = "Please provide boolean value for na.rm option")
-  assertthat::assert_that(assertive::is_numeric(x),msg = "Please provide numeric vector as input")
+  # assertthat::assert_that(assertive::is_a_bool(na.rm),msg = "Please provide boolean value for na.rm option")
+  # assertthat::assert_that(assertive::is_numeric(x),msg = "Please provide numeric vector as input")
   if (length(x)==1) {
     gm_mean=x[1]
   }
@@ -251,6 +251,7 @@ load_yaml_samples <- function(yaml_path) {
   if (!"sample_name" %in% colnames(input_samples_table)) {
     input_samples_table$sample_name <- samples_names  
   }
+  input_samples_table$sample_id <- rownames(input_samples_table)
   rownames(input_samples_table) <- NULL
   # from the input_samples_table do not select columns containing seq_summary, seq_date, kit, guppy, nanopolish, enrichment_method
   # this should not return error when given column does not exists  
@@ -274,7 +275,7 @@ load_yaml_samples <- function(yaml_path) {
   if ("enrichment_method" %in% colnames(input_samples_table)) {
     input_samples_table <- input_samples_table %>% dplyr::select(-enrichment_method)
   }
-  input_samples_table <- input_samples_table %>% dplyr::select(sample_name,dplyr::everything()) # move sample name to the beginning of table
+  input_samples_table <- input_samples_table %>% dplyr::select(sample_id,sample_name,dplyr::everything()) # move sample name to the beginning of table
   
   #input_samples_table <- input_samples_table %>% dplyr::select(sample_name,dplyr::everything()) # move sample name to the beginning of table
   return(input_samples_table)

@@ -1,87 +1,10 @@
 #' Read Single Nanopolish polyA preditions from file
 #'
-#' This is the basic function used to import output from \code{nanopolish polya} to R
-#'
-#' @param polya_path path to nanopolish output file
-#' @param sample_name sample name (optional), provided as a string.
-#' If specified will be included as an additional column sample_name.
-#' @param gencode are contig names GENCODE-compliant.
-#' Can get transcript names and ensembl_transcript IDs if reads were mapped for example to Gencode reference transcriptome
-#'
-#' @seealso \link{read_polya_multiple}
-#'
-#' @export
-#'
-#' @return a [tibble][tibble::tibble-package] with polya predictions
-#'
-read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, dorado = FALSE) {
-  # required asserts
-  
-  #check if parameters are provided
-  if (missing(polya_path)) {
-    stop("The path to polyA predictions (argument polya_path) is missing",
-         call. = FALSE)
-  }
-  assertthat::assert_that(assertive::is_a_non_missing_nor_empty_string(polya_path),msg = "Empty string provided as an input. Please provide a polya_path as a string")
-  assertthat::assert_that(assertive::is_existing_file(polya_path),msg=paste("File ",polya_path," not exists",sep=""))
-  assertthat::assert_that(assertive::is_non_empty_file(polya_path),msg=paste("File ",polya_path," is empty",sep=""))
-  assertthat::assert_that(assertive::is_a_bool(gencode),msg="Please provide TRUE/FALSE values for gencode parameter")
-  
-  message(paste0("Loading data from ",polya_path))
-  
-  #integer64 set to "numeric" to avoid inconsistences when called from read_polya_multiple
-  
-  file_header <- read.table(polya_path,nrows=1)
-  if (sum(c("pt","reference","ref_start") %in% file_header)==3) {
-    message("Seems like output from dorado. ")
-    dorado = TRUE
-  }
-  
-  polya_data <- data.table::fread(polya_path, integer64 = "numeric", data.table = F,header=TRUE,stringsAsFactors = FALSE,check.names = TRUE,showProgress = FALSE) %>% dplyr::as_tibble()
-  if (!dorado) {
-    polya_data <- polya_data %>% dplyr::mutate(polya_length = round(polya_length),dwell_time=transcript_start-polya_start)
-  }
-  else {
-    polya_data <- polya_data %>% dplyr::mutate(polya_length = round(pt),dwell_time=NA) %>% dplyr::rename(contig=reference)
-  }
-  # change first column name
-  colnames(polya_data)[1] <- "read_id"
-  # transcript names, if mapping to gencode transcriptome
-  if (gencode == TRUE) {
-    transcript_names <- gsub(".*?\\|.*?\\|.*?\\|.*?\\|.*?\\|(.*?)\\|.*", "\\1", polya_data$contig)
-    polya_data$transcript <- transcript_names
-    ensembl_transcript_ids <- gsub("^(.*?)\\|.*\\|.*", "\\1", polya_data$contig)
-    ensembl_transcript_ids_short <- gsub("(.*)\\..*", "\\1", ensembl_transcript_ids) # without version number
-    polya_data$ensembl_transcript_id_full <- ensembl_transcript_ids
-    polya_data$ensembl_transcript_id_short <- ensembl_transcript_ids_short
-  }
-  else {
-    polya_data <- polya_data %>% dplyr::rename(transcript = contig)
-  }
-  
-  if(!is.na(sample_name)) {
-    # set sample_name (if was set)
-    if (! "sample_name" %in% colnames(polya_data)) {
-      warning("sample_name was provided in the input file. Overwriting with the provided one")
-    }
-    polya_data$sample_name = sample_name
-    polya_data$sample_name <- as.factor(polya_data$sample_name)
-  }
-  
-  return(polya_data)
-}
-
-
-
-#' Read Single Nanopolish polyA preditions from file
-#'
 #' This is the basic function used to import output from poly(A) prediction programs to R
 #'
 #' @param polya_path path to nanopolish output file
 #' @param sample_name sample name (optional), provided as a string.
 #' If specified will be included as an additional column sample_name.
-#' @param gencode are contig names GENCODE-compliant.
-#' Can get transcript names and ensembl_transcript IDs if reads were mapped for example to Gencode reference transcriptome
 #' @param input_type type of input file. Can be one of: \itemize{
 #' \item nanopolish - nanopolish output
 #' \item dorado - dorado output
@@ -95,7 +18,7 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, dora
 #'
 #' @return a [tibble][tibble::tibble-package] with polya predictions
 #'
-read_polya_single2 <- function(polya_path, gencode = TRUE, sample_name = NA, input_type = "auto", metadata) {
+read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, input_type = "auto", metadata) {
     # required asserts
 
     #check if parameters are provided
@@ -111,17 +34,13 @@ read_polya_single2 <- function(polya_path, gencode = TRUE, sample_name = NA, inp
 
     checkmate::assert_string(polya_path)
     checkmate::assert_file_exists(polya_path)
-    checkmate::assert_logical(gencode)
-
-    
-    
 
     # assert the file in polya_path is not empty:
     if (file.size(polya_path) == 0) {
       stop("File ",polya_path," is empty",call. = FALSE)
     }
   
-    if (!missing(polya_path)) {
+    if (!missing(metadata)) {
       message("metadata provided as an argument")
       
     }
@@ -210,22 +129,7 @@ read_polya_single2 <- function(polya_path, gencode = TRUE, sample_name = NA, inp
     # change first column name
     colnames(polya_data)[1] <- "read_id"
     # transcript names, if mapping to gencode transcriptome
-    # skip if tailfindr output - as it lacks information on the reference
-    if (gencode == TRUE & input_type!="tailfindr") {
-        transcript_names <- gsub(".*?\\|.*?\\|.*?\\|.*?\\|.*?\\|(.*?)\\|.*", "\\1", polya_data$reference)
-        polya_data$transcript <- transcript_names
-        ensembl_transcript_ids <- gsub("^(.*?)\\|.*\\|.*", "\\1", polya_data$reference)
-        ensembl_transcript_ids_short <- gsub("(.*)\\..*", "\\1", ensembl_transcript_ids) # without version number
-        polya_data$ensembl_transcript_id_version <- ensembl_transcript_ids
-        polya_data$ensembl_transcript_id <- ensembl_transcript_ids_short
-    }
-    else {
-      # if not gencode use contig (mapped reference) as transcript name
-      polya_data$transcript <- polya_data$reference
-      # NA for ensembl_transcript_id_version and ensembl_transcript_id to make sure tables are of the same size
-      polya_data$ensembl_transcript_id_version <- NA
-      polya_data$ensembl_transcript_id <- NA
-    }
+   
 
     if(!is.na(sample_name)) {
       # set sample_name (if was set)
@@ -240,49 +144,7 @@ read_polya_single2 <- function(polya_path, gencode = TRUE, sample_name = NA, inp
 }
 
 
-# TODO Benchmark na lapply/for loop
 
-#' Reads multiple polyA predictions at once
-#'
-#' This function can be used to load any number of files with polyA predictions with single invocation,
-#' allowing for metadata specification.
-#'
-#'
-#' @param samples_table data.frame or tibble containing samples metadata and paths to files.
-#' Should have at least two columns: \itemize{
-#' \item polya_path - containing path to the polya predictions file
-#' \item sample_name - unique name of the sample
-#' }
-#' Additional columns can provide metadata which will be included in the final table
-#' @param ... - additional parameters to pass to read_polya_single(), like gencode=(TRUE/FALSE)
-#'
-#' @return a [tibble][tibble::tibble-package] containing polyA predictions for all specified samples, with metadata provided in samples_table
-#' stored as separate columns
-#'
-#' @seealso \link{read_polya_single}
-#'
-#' @export
-#'
-read_polya_multiple <- function(samples_table,...) {
-
-  if (missing(samples_table)) {
-    stop("Samples table argument is missing",
-         call. = FALSE)
-  }
-
-  assertthat::assert_that(assertive::has_rows(samples_table),msg = "Empty data frame provided as an input (samples_table). Please provide samples_table describing data to load")
-  assertthat::assert_that("polya_path" %in% colnames(samples_table),msg = "Samples table should contain at least polya_path and sample_name columns")
-  assertthat::assert_that("sample_name" %in% colnames(samples_table),msg = "Samples table should contain at least polya_path and sample_name columns")
-
-  
-  
-  
-  
-  samples_data <- samples_table %>% dplyr::as.tbl() %>% dplyr::mutate_if(is.character,as.factor) %>% dplyr::mutate(polya_path = as.character(polya_path)) %>% dplyr::group_by(sample_name) %>% dplyr::mutate(polya_contents=purrr::map(polya_path, function(x) read_polya_single(x))) %>% dplyr::ungroup() %>% dplyr::select(-polya_path)
-  polya_data <- tidyr::unnest(samples_data)
-
-  return(polya_data)
-}
 
 
 #' Removes reads which failed during Nanopolish polya processing
@@ -304,7 +166,7 @@ remove_failed_reads <- function(polya_data) {
          call. = FALSE)
   }
 
-  assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
+  #assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
 
   filtered_polya_data <- polya_data %>% dplyr::filter(qc_tag=='PASS')
   return(filtered_polya_data)
@@ -320,19 +182,32 @@ remove_failed_reads <- function(polya_data) {
 
 #' Reads multiple polyA predictions at once
 #'
-#' @param input_table data.frame or tibble containing samples metadata and paths to files.
+#' This function can be used to load any number of files with polyA predictions with single invocation,
+#' allowing for metadata specification.
 #'
-#' @return a list containing polyA predictions for all specified samples, with metadata provided in samples_table
-#' @export 
 #'
-#' @examples 
+#' @param samples_table data.frame or tibble containing samples metadata and paths to files.
+#' Should have at least two columns: \itemize{
+#' \item polya_path - containing path to the polya predictions file
+#' \item sample_name - unique name of the sample
+#' }
+#' Additional columns can provide metadata which will be included in the final table
+#' @param ... - additional parameters to pass to read_polya_single(), like gencode=(TRUE/FALSE)
+#'
+#' @return a [tibble][tibble::tibble-package] containing polyA predictions for all specified samples, with metadata provided in samples_table
+#' stored as separate columns
+#'
+#' @seealso \link{read_polya_single}
+#'
+#' @export
+#'@examples
 #' \dontrun{
 #' 
-#' read_polya_multiple2(example_sample_table)
+#' read_polya_multiple(example_sample_table)
 #' 
 #' }
 #' 
-read_polya_multiple2 <- function(input_table) {
+read_polya_multiple <- function(input_table) {
   # check if input_table is provided
   if (missing(input_table)) {
     stop("Table is missing. Please provide a valid table argument",
@@ -364,6 +239,12 @@ read_polya_multiple2 <- function(input_table) {
          call. = FALSE)
   }
   
+  # check if input_table has a column named sample_id
+  if (!("sample_id" %in% colnames(input_table))) {
+    stop("Table should have a column named sample_id",
+         call. = FALSE)
+  }
+  
   # check if input_table has a column named polya_path which is character
   if (!all(sapply(input_table$polya_path, is.character))) {
     stop("Column polya_path should be character",
@@ -373,6 +254,11 @@ read_polya_multiple2 <- function(input_table) {
   # check if input_table has a column named sample_name which is character
   if (!all(sapply(input_table$sample_name, is.character))) {
     stop("Column sample_name should be character",
+         call. = FALSE)
+  }
+  # check if input_table has a column named sample_id which is character
+  if (!all(sapply(input_table$sample_id, is.character))) {
+    stop("Column sample_id should be character",
          call. = FALSE)
   }
   
@@ -388,23 +274,94 @@ read_polya_multiple2 <- function(input_table) {
          call. = FALSE)
   }
   
+  # check if input_table has a column named sample_id which is not empty
+  if (!all(sapply(input_table$sample_id, function(x) nchar(x) > 0))) {
+    stop("Column sample_id should not be empty",
+         call. = FALSE)
+  }
+  
   # read the content of files paths provided in ths column
   output <- list()
   for (i in 1:nrow(input_table
                     )) {
-    output[[input_table$sample_name[i]]] <- list(data = read_polya_single2(input_table$polya_path[i], sample_name = input_table$sample_name[i]))
-    output[[input_table$sample_name[i]]]$meta <- input_table[i, -which(names(input_table) %in% c("polya_path"))]
+    
+    # show progress bar indicating how many samples out of total were processed
+    
+    message(paste0("Processing sample ",i," out of ",nrow(input_table)))
+    
+    output[[input_table$sample_id[i]]] <- list(data = read_polya_single(input_table$polya_path[i], sample_name = input_table$sample_name[i]))
+    output[[input_table$sample_id[i]]]$meta <- input_table[i, -which(names(input_table) %in% c("polya_path"))]
   }
   
+  message("Finished all samples from the input table")
   return(output)
 }
 
 
+# a function which will take a list as the input, and parse content of  "reference" column in the data element of each element list into gene id (2nd column after strsplit), transcript id (first column after strsplit) and symbol (6th column after strsplit).
+# from transcript and gene id remove dot and everything after it
 
+parse_gencode_headers <- function(input_list, remove_reference_column = FALSE) {
+ 
+  # check if input_list is provided
+  if (missing(input_list)) {
+    stop("List is missing. Please provide a valid list argument",
+         call. = FALSE)
+  }
+  # check if input_list is a list
+  checkmate::assert_list(input_list)
+  # if (!is.list(input_list)) {
+  #   stop("List should be provided as a list",
+  #        call. = FALSE)
+  # }
+  
+  # check if input_list has at least one element
+  if (length(input_list) < 1) {
+    stop("List should have at least one element",
+         call. = FALSE)
+  }
+  
+  # check if input_list has elements named data and meta
+  if (!all(c("data","meta") %in% names(input_list[[1]]))) {
+    stop("List should have elements named data and meta",
+         call. = FALSE)
+  }
+  
+  # check if input_list has elements named data and meta which are lists
+  if (!all(sapply(input_list, function(x) is.list(x$data)))) {
+    stop("Elements named data should be lists",
+         call. = FALSE)
+  }
+  
+  # check if input_list has elements named data and meta which are lists
+  if (!all(sapply(input_list, function(x) is.list(x$meta)))) {
+    stop("Elements named meta should be lists",
+         call. = FALSE)
+  }
 
-
-
-
-
-
-
+  
+  # parse content of "reference" column in the data element of each element list into gene id (2nd column after strsplit), transcript id (first column after strsplit) and symbol (6th column after strsplit).
+  # every row of data should be processed, do not output strsplit for first row only
+  # elements in refernce are separated by |
+  # use gsub
+  # from transcript and gene id remove dot and everything after it
+  
+  for (i in 1:length(input_list)) {
+    split_reference <- strsplit(input_list[[i]]$data$reference,"\\|")
+    input_list[[i]]$data$gene_id <- sapply(split_reference,function(x) gsub("\\..*","",x[2]))
+    input_list[[i]]$data$transcript_id <- sapply(split_reference,function(x) gsub("\\..*","",x[1]))
+    input_list[[i]]$data$symbol <- sapply(split_reference,function(x) x[6])
+    
+    # remove reference column if requested
+    if (remove_reference_column) {
+      input_list[[i]]$data$reference <- NULL
+    }
+  }
+  
+  
+ 
+  
+  return(input_list)
+  
+  
+}
