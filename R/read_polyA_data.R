@@ -11,6 +11,8 @@
 #' \item tailfindr - tailfindr output
 #' \item auto - automatically detect input type
 #' }
+#' @param metadata additional columns to keep in the output table
+#' @param additional_columns_to_keep additional columns to keep in the output table
 #' 
 #' @seealso \link{read_polya_multiple}
 #'
@@ -18,7 +20,7 @@
 #'
 #' @return a [tibble][tibble::tibble-package] with polya predictions
 #'
-read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, input_type = "auto", metadata) {
+read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, input_type = "auto", metadata,additional_columns_to_keep) {
     # required asserts
 
     #check if parameters are provided
@@ -95,7 +97,12 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, inpu
       columns_to_keep = c("read_id","read_type","tail_length","tail_is_valid")
     }
 
-    
+    if (!missing(additional_columns_to_keep)) {
+      columns_to_keep <- c(columns_to_keep,additional_columns_to_keep)
+      no_additional_columns <- length(additional_columns_to_keep)
+      message(paste0("additional_columns: ",no_additional_columns))
+      message(columns_to_keep)
+    }
     
     #integer64 set to "numeric" to avoid inconsistences when called from read_polya_multiple
     polya_data <- data.table::fread(polya_path, integer64 = "numeric", data.table = F,header=TRUE,stringsAsFactors = FALSE,check.names = TRUE,showProgress = FALSE, select = columns_to_keep) %>% dplyr::as_tibble()
@@ -108,26 +115,45 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, inpu
       polya_data$qc_tag <- "PASS"
       polya_data$read_type <- NA
       # make proper order of columns
-      polya_data <- polya_data[,c(1,2,3,4,6,5,7)]
-      colnames(polya_data) <- c("readname","reference","ref_start","polya_length","qc_tag","mapq","read_type")
+      if (!missing(additional_columns_to_keep)) {
+        polya_data <- polya_data[,c(1,2,3,4,(no_additional_columns+6),5,(no_additional_columns+7),seq(6,(no_additional_columns+5)))]
+      }
+      else {
+        polya_data <- polya_data[,c(1,2,3,4,6,5,7)]
+      }
     }    
     else if (input_type=='nanopolish') {
       polya_data$mapq <- NA
       polya_data$read_type <- NA
-      colnames(polya_data) <- c("readname","reference","ref_start","polya_length","qc_tag","mapq","read_type")
+      if (!missing(additional_columns_to_keep)) {
+        polya_data <- polya_data[,c(1,2,3,4,5,(no_additional_columns+6),(no_additional_columns+7),seq(6,(no_additional_columns+5)))]
+      }
+      else {
+        polya_data <- polya_data[,c(1,2,3,4,6,5,7)]
+      }
+      #colnames(polya_data) <- c("readname","reference","ref_start","polya_length","qc_tag","mapq","read_type")
     }
     else if (input_type=='tailfindr') {
       polya_data$reference <- NA
       polya_data$ref_start <- NA
       polya_data$mapq <- NA
       # make reference second column and ref_start third column in polya_data using base R
-      polya_data <- polya_data[,c(1,5,6,3,4,7,2)]
-      colnames(polya_data) <- c("readname","reference","ref_start","polya_length","qc_tag","mapq","read_type")
+      if (!missing(additional_columns_to_keep)) {
+        polya_data <- polya_data[,c(1,5,(no_additional_columns+6),3,4,(no_additional_columns+7),2,seq(5,(no_additional_columns+4)))]
+      }
+      else {
+        polya_data <- polya_data[,c(1,5,6,3,4,7,2)]
+      }
+        #colnames(polya_data) <- c("readname","reference","ref_start","polya_length","qc_tag","mapq","read_type")
       polya_data$qc_tag <- ifelse(polya_data$qc_tag==TRUE,"PASS","FAIL")
     }
     
-    # change first column name
-    colnames(polya_data)[1] <- "read_id"
+    if (!missing(additional_columns_to_keep)) {
+      colnames(polya_data) <- c("read_id","reference","ref_start","polya_length","qc_tag","mapq","read_type",additional_columns_to_keep)
+    }
+    else {
+      colnames(polya_data) <- c("read_id","reference","ref_start","polya_length","qc_tag","mapq","read_type")
+    }
     # transcript names, if mapping to gencode transcriptome
    
 
@@ -207,7 +233,7 @@ remove_failed_reads <- function(polya_data) {
 #' 
 #' }
 #' 
-read_polya_multiple <- function(input_table) {
+read_polya_multiple <- function(input_table,...) {
   # check if input_table is provided
   if (missing(input_table)) {
     stop("Table is missing. Please provide a valid table argument",
@@ -289,7 +315,7 @@ read_polya_multiple <- function(input_table) {
     
     message(paste0("Processing sample ",i," out of ",nrow(input_table)))
     
-    output[[input_table$sample_id[i]]] <- list(data = read_polya_single(input_table$polya_path[i], sample_name = input_table$sample_name[i]))
+    output[[input_table$sample_id[i]]] <- list(data = read_polya_single(input_table$polya_path[i], sample_name = input_table$sample_name[i],...))
     output[[input_table$sample_id[i]]]$meta <- input_table[i, -which(names(input_table) %in% c("polya_path"))]
   }
   

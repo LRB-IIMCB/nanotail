@@ -42,6 +42,9 @@ polya_list_to_data_frame <- function(input_list) {
          call. = FALSE)
   }
   
+  # skip empty data.frames
+  input_list <- input_list[sapply(input_list, function(x) nrow(x$data) > 0)]
+  
   # add metadata to data
   for (i in 1:length(input_list)) {
     input_list[[i]]$data <- cbind(input_list[[i]]$meta, input_list[[i]]$data)
