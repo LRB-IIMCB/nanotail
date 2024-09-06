@@ -453,3 +453,71 @@ get_references <- function(input_list,reference_column="reference") {
   
 }
 
+
+# a function which will take a list as the input, and parse content of  "reference" column in the data element of each element list into gene id (2nd column after strsplit), transcript id (first column after strsplit) and symbol (6th column after strsplit).
+# from transcript and gene id remove dot and everything after it
+
+parse_gencode_headers <- function(input_list, remove_reference_column = FALSE) {
+  
+  # check if input_list is provided
+  if (missing(input_list)) {
+    stop("List is missing. Please provide a valid list argument",
+         call. = FALSE)
+  }
+  # check if input_list is a list
+  checkmate::assert_list(input_list)
+  # if (!is.list(input_list)) {
+  #   stop("List should be provided as a list",
+  #        call. = FALSE)
+  # }
+  
+  # check if input_list has at least one element
+  if (length(input_list) < 1) {
+    stop("List should have at least one element",
+         call. = FALSE)
+  }
+  
+  # check if input_list has elements named data and meta
+  if (!all(c("data","meta") %in% names(input_list[[1]]))) {
+    stop("List should have elements named data and meta",
+         call. = FALSE)
+  }
+  
+  # check if input_list has elements named data and meta which are lists
+  if (!all(sapply(input_list, function(x) is.list(x$data)))) {
+    stop("Elements named data should be lists",
+         call. = FALSE)
+  }
+  
+  # check if input_list has elements named data and meta which are lists
+  if (!all(sapply(input_list, function(x) is.list(x$meta)))) {
+    stop("Elements named meta should be lists",
+         call. = FALSE)
+  }
+  
+  
+  # parse content of "reference" column in the data element of each element list into gene id (2nd column after strsplit), transcript id (first column after strsplit) and symbol (6th column after strsplit).
+  # every row of data should be processed, do not output strsplit for first row only
+  # elements in refernce are separated by |
+  # use gsub
+  # from transcript and gene id remove dot and everything after it
+  
+  for (i in 1:length(input_list)) {
+    split_reference <- strsplit(input_list[[i]]$data$reference,"\\|")
+    input_list[[i]]$data$gene_id <- sapply(split_reference,function(x) gsub("\\..*","",x[2]))
+    input_list[[i]]$data$transcript_id <- sapply(split_reference,function(x) gsub("\\..*","",x[1]))
+    input_list[[i]]$data$symbol <- sapply(split_reference,function(x) x[6])
+    
+    # remove reference column if requested
+    if (remove_reference_column) {
+      input_list[[i]]$data$reference <- NULL
+    }
+  }
+  
+  
+  
+  
+  return(input_list)
+  
+  
+}
