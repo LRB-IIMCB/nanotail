@@ -172,33 +172,6 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, inpu
 
 
 
-
-#' Removes reads which failed during Nanopolish polya processing
-#'
-#' Convenient function to quickly remove all reads failing during nanopolish polya processing
-#'
-#' @param polya_data output table from \link{read_polya_single} or \link{read_polya_multiple}
-#'
-#' @return a [tibble][tibble::tibble-package] with only reads having qc_tag=='PASS'
-#'
-#' @export
-#'
-#' @seealso \link{read_polya_single}, \link{read_polya_multiple}
-#'
-remove_failed_reads <- function(polya_data) {
-
-  if (missing(polya_data)) {
-    stop("Please provide data.frame with polyA predictions as an input.",
-         call. = FALSE)
-  }
-
-  #assertthat::assert_that(assertive::has_rows(polya_data),msg = "Empty data frame provided as an input (polya_data). Please provide valid input")
-
-  filtered_polya_data <- polya_data %>% dplyr::filter(qc_tag=='PASS')
-  return(filtered_polya_data)
-}
-
-
 # with the input table, take the path column and use it to read the content of files paths provided in ths column
 # return the content of the files as a list
 # the name of the list elements should be the same as the sample_name column
