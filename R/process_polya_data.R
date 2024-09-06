@@ -379,3 +379,77 @@ filter_polya_list_by_transcript <- function(input_list, transcript,transcript_id
   
 }
 
+#' Get references from the list of poly(A) predictions
+#' 
+#' @param input_list a list - output of read_polya_multiple() with poly(A) predictions
+#' @param reference_column a character vector with column name with references
+#' 
+#' @return list with references
+#' @export
+#' 
+#' @examples
+#' \dontrun{
+#' 
+#' get_references(input_list,reference_column="reference")
+#' 
+#' }
+#'  
+get_references <- function(input_list,reference_column="reference") {
+
+  # check if input_list is provided
+  if (missing(input_list)) {
+    stop("List is missing. Please provide a valid list argument",
+         call. = FALSE)
+  }
+  # check if input_list is a list
+  if (!is.list(input_list)) {
+    stop("List should be provided as a list",
+         call. = FALSE)
+  }
+
+  # check if each element of the list has another list named meta
+  if (!all(sapply(input_list, function(x) "meta" %in% names(x)))) {
+    stop("Each element of the list should have another list named meta",
+         call. = FALSE)
+  }
+  
+  # check if each element of the list has another data element
+  if (!all(sapply(input_list, function(x) "data" %in% names(x)))) {
+    stop("Each element of the list should have another data element",
+         call. = FALSE)
+  }
+  
+  # check if each element of the list has a data element which is a data.frame
+  if (!all(sapply(input_list, function(x) is.data.frame(x$data)))) {
+    stop("Each element of the list should have a data element which is a data.frame",
+         call. = FALSE)
+  }
+  
+  # check if each element of the list has a meta element which is a list
+  if (!all(sapply(input_list, function(x) is.list(x$meta)))) {
+    stop("Each element of the list should have a meta element which is a list",
+         call. = FALSE)
+  }
+  
+  # check if transcript is provided
+  if (missing(reference_column)) {
+    stop("Reference_column is missing. Please provide a valid reference_column argument",
+         call. = FALSE)
+  }
+  
+  # check if transcript is a string, not the vector
+  
+  if (!is.character(reference_column) & length(reference_column) != 1) {
+    stop("Reference_column should be a character vector or single character",
+         call. = FALSE)
+  }
+  
+  
+  # get the content of reference column of data element of each element of the list
+  # combine all the references for each list elements into single vector, with all values unique
+  # return the produced vector
+  
+  output <- unique(unlist(lapply(input_list, function(x) x$data[[reference_column]])))
+  
+}
+
