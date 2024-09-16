@@ -281,6 +281,7 @@ read_polya_multiple <- function(input_table,...) {
   
   # read the content of files paths provided in ths column
   output <- list()
+  output$samples <- list()
   for (i in 1:nrow(input_table
                     )) {
     
@@ -288,8 +289,8 @@ read_polya_multiple <- function(input_table,...) {
     
     message(paste0("Processing sample ",i," out of ",nrow(input_table)))
     
-    output[[input_table$sample_id[i]]] <- list(data = read_polya_single(input_table$polya_path[i], sample_name = input_table$sample_name[i],...))
-    output[[input_table$sample_id[i]]]$meta <- input_table[i, -which(names(input_table) %in% c("polya_path"))]
+    output$samples[[input_table$sample_id[i]]] <- list(data = read_polya_single(input_table$polya_path[i], sample_name = input_table$sample_name[i],...))
+    output$samples[[input_table$sample_id[i]]]$meta <- input_table[i, -which(names(input_table) %in% c("polya_path"))]
   }
   
   message("Finished all samples from the input table")

@@ -13,45 +13,52 @@ polya_list_to_data_frame <- function(input_list) {
   }
   # check if input_list is a list
   if (!is.list(input_list)) {
-    stop("List should be provided as a list",
+    stop("Input should be provided as a list",
+         call. = FALSE)
+  }
+  
+  # check if input_list samples is a list
+  if (!is.list(input_list$samples)) {
+    stop("There should be a 'samples' list provided in the input_list",
          call. = FALSE)
   }
   
 
-  # check if each element of the list has another list named meta
-  if (!all(sapply(input_list, function(x) "meta" %in% names(x)))) {
+  # check if each element of the samples list has another list named meta
+  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
     stop("Each element of the list should have another list named meta",
          call. = FALSE)
   }
   
   # check if each element of the list has another data element
-  if (!all(sapply(input_list, function(x) "data" %in% names(x)))) {
+  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
     stop("Each element of the list should have another data element",
          call. = FALSE)
   }
   
   # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list, function(x) is.data.frame(x$data)))) {
+  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
     stop("Each element of the list should have a data element which is a data.frame",
          call. = FALSE)
   }
   
   # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list, function(x) is.list(x$meta)))) {
+  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
     stop("Each element of the list should have a meta element which is a list",
          call. = FALSE)
   }
   
   # skip empty data.frames
-  input_list <- input_list[sapply(input_list, function(x) nrow(x$data) > 0)]
+  input_list <- input_list[sapply(input_list$samples, function(x) nrow(x$data) > 0)]
   
   # add metadata to data
-  for (i in 1:length(input_list)) {
-    input_list[[i]]$data <- cbind(input_list[[i]]$meta, input_list[[i]]$data)
+  for (i in 1:length(input_list$samples)) {
+    input_list$samples[[i]]$data <- cbind(input_list$samples[[i]]$meta, input_list$samples[[i]]$data)
   }
   
   # return a data.frame with all elements of the list containg metadata columns
-  output <- do.call(rbind, lapply(input_list, function(x) x$data), make.row.names = FALSE)
+  output <- do.call(rbind, lapply(input_list$samples, function(x) x$data))
+  row.names(output) <- NULL # get rid of row names
   return(output)
 }
 
@@ -83,6 +90,14 @@ get_transcript_data_from_polya_list <- function(input_list, transcript,transcrip
          call. = FALSE)
   }
   
+  
+  
+  # check if input_list samples is a list
+  if (!is.list(input_list$samples)) {
+    stop("There should be a 'samples' list provided in the input_list",
+         call. = FALSE)
+  }
+  
   # check if transcript is a character vector or single character
   if (!is.character(transcript) & length(transcript) != 1) {
     stop("Transcript should be a character vector or single character",
@@ -91,25 +106,25 @@ get_transcript_data_from_polya_list <- function(input_list, transcript,transcrip
   
   
   # check if each element of the list has another list named meta
-  if (!all(sapply(input_list, function(x) "meta" %in% names(x)))) {
+  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
     stop("Each element of the list should have another list named meta",
          call. = FALSE)
   }
   
   # check if each element of the list has another data element
-  if (!all(sapply(input_list, function(x) "data" %in% names(x)))) {
+  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
     stop("Each element of the list should have another data element",
          call. = FALSE)
   }
   
   # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list, function(x) is.data.frame(x$data)))) {
+  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
     stop("Each element of the list should have a data element which is a data.frame",
          call. = FALSE)
   }
   
   # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list, function(x) is.list(x$meta)))) {
+  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
     stop("Each element of the list should have a meta element which is a list",
          call. = FALSE)
   }
@@ -117,7 +132,7 @@ get_transcript_data_from_polya_list <- function(input_list, transcript,transcrip
   # filter a data element of each element of the list, to keep only rows where transcript column is equal to the transcript argument
   # transcript column is specified by the transcript_id_column argument
 
-  output <- lapply(input_list, function(x) {
+  output <- lapply(input_list$samples, function(x) {
     data <- x$data
     meta <- x$meta
     data <- data[data[[transcript_id_column]] %in% transcript,]
@@ -450,7 +465,7 @@ get_references <- function(input_list,reference_column="reference") {
   # return the produced vector
   
   output <- unique(unlist(lapply(input_list, function(x) x$data[[reference_column]])))
-  
+  return(output)
 }
 
 
