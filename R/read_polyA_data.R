@@ -20,7 +20,7 @@
 #'
 #' @return a [tibble][tibble::tibble-package] with polya predictions
 #'
-read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, input_type = "auto", metadata,additional_columns_to_keep) {
+read_polya_single <- function(polya_path, gencode = TRUE, verbose=TRUE, sample_name = NA, input_type = "auto", metadata,additional_columns_to_keep) {
     # required asserts
 
     #check if parameters are provided
@@ -47,8 +47,10 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, inpu
       
     }
   
-    message(paste0("Loading data from ",polya_path))
-
+    if (verbose) {
+      message(paste0("Loading data from ",polya_path))
+    }
+    
    
     
     
@@ -58,19 +60,27 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, inpu
     
     if ((sum(c("reference","ref_start","pt") %in% colnames(file_header))==3)) {
         guessed_input_type <- "dorado_old" # for compatibility with previous versions of python script getting poly(A) from bams 
-        message("Dorado output detected (older naming convention with pt insted of polya_length column)")
+        if (verbose) {
+          message("Dorado output detected (older naming convention with pt insted of polya_length column)")
+        }
     }
     else if ((sum(c("reference","ref_start") %in% colnames(file_header))==2)) {
       guessed_input_type <- "dorado"
-      message("Dorado output detected")
+      if (verbose) {
+        message("Dorado output detected")
+      }
     }
     else if (sum(c("read_type","tail_is_valid") %in% colnames(file_header))==2) {
       guessed_input_type <- "tailfindr"
-      message("Tailfindr output detected")
+      if (verbose) {
+        message("Tailfindr output detected")
+      }
     }
     else if (sum(c("read_rate","qc_tag") %in% colnames(file_header))==2) {
       guessed_input_type <- "nanopolish"
-      message("Nanopolish output detected")
+      if (verbose) {
+        message("Nanopolish output detected")
+      }
     }
     else {
         stop("Unknown type of input file",call. = FALSE)
@@ -100,8 +110,10 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, inpu
     if (!missing(additional_columns_to_keep)) {
       columns_to_keep <- c(columns_to_keep,additional_columns_to_keep)
       no_additional_columns <- length(additional_columns_to_keep)
-      message(paste0("additional_columns: ",no_additional_columns))
-      message(columns_to_keep)
+      if (verbose) {
+        message(paste0("additional_columns: ",no_additional_columns))
+        message(columns_to_keep)
+      }
     }
     
     #integer64 set to "numeric" to avoid inconsistences when called from read_polya_multiple
@@ -206,7 +218,7 @@ read_polya_single <- function(polya_path, gencode = TRUE, sample_name = NA, inpu
 #' 
 #' }
 #' 
-read_polya_multiple <- function(input_table,...) {
+read_polya_multiple <- function(input_table,verbose=TRUE,process_references=TRUE,...) {
   # check if input_table is provided
   if (missing(input_table)) {
     stop("Table is missing. Please provide a valid table argument",
@@ -286,14 +298,34 @@ read_polya_multiple <- function(input_table,...) {
                     )) {
     
     # show progress bar indicating how many samples out of total were processed
-    
-    message(paste0("Processing sample ",i," out of ",nrow(input_table)))
+    if (verbose) {
+      message(paste0("Processing sample ",i," out of ",nrow(input_table)))
+    }
     
     output$samples[[input_table$sample_id[i]]] <- list(data = read_polya_single(input_table$polya_path[i], sample_name = input_table$sample_name[i],...))
     output$samples[[input_table$sample_id[i]]]$meta <- input_table[i, -which(names(input_table) %in% c("polya_path"))]
   }
   
-  message("Finished all samples from the input table")
+  if (process_references) {
+    # get mapped references for all samples and store in the "references" element of the list
+    if (verbose) {
+      message("Processing references")
+    }
+    output$references <- data.frame(reference=get_references(output,reference_column = "reference"),symbol=NA)
+    
+    # convert all reference_columns in data to factors
+    for (i in 1:length(output$samples)) {
+      output$samples[[i]]$data$reference <- as.factor(output$samples[[i]]$data$reference)
+    }
+  }
+  
+  if (verbose) {
+    message("Finished all samples from the input table")
+  }
+  
+  # set additional class for the output, inicating nanotail object (list) with poly(A) data
+  class(output) <- c(class(output), "nanotail_polya_data")
+  
   return(output)
 }
 
