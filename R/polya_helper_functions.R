@@ -280,3 +280,33 @@ load_yaml_samples <- function(yaml_path) {
   #input_samples_table <- input_samples_table %>% dplyr::select(sample_name,dplyr::everything()) # move sample name to the beginning of table
   return(input_samples_table)
 }
+
+is.nanotail_polya_data <- function(input_list) {
+  if (missing(input_list)) {
+    stop("Input  is missing. Please provide a valid argument",
+         call. = FALSE)
+  }
+  
+  # check presence of class nanotail_polya_data
+  if (!class(x) %in% c("nanotail_polya_data")) {
+    stop("Not all of the provided list elements are of class nanotail_polya_data. Please provide valid polya data",
+         call. = FALSE)
+  }
+  
+  if (length(input_list) < 1) {
+    stop("Input list should have at least one element",
+         call. = FALSE)
+  }
+  
+  if (!all(sapply(input_list, function(x) {is.data.frame(x)}))) {
+    stop("Not all of the provided list elements are data frames. Please provide valid polya data",
+         call. = FALSE)
+  }
+  
+  if (!all(sapply(input_list, function(x) {all(c("transcript","polya_length") %in% colnames(x))}))) {
+    stop("Not all of the provided data frames contain required columns. Please provide valid polya data",
+         call. = FALSE)
+  }
+  
+  return(TRUE)
+}
