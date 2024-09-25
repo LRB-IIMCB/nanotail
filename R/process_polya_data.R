@@ -483,6 +483,21 @@ annotate_references <- function(input_list,method) {
 }
 
 
+#' Filter samples from the list of poly(A) predictions
+#' 
+#' @param input_list a list - output of read_polya_multiple() with poly(A) predictions
+#' @param samples a character vector with sample names to keep
+#' 
+#' @return list with filtered samples
+#' @export
+#' 
+#' @examples
+#' \dontrun{
+#' 
+#' filter_polya_list_samples(input_list,samples=c("sample1","sample2"))
+#' 
+#' }
+#' 
 filter_polya_list_samples <- function(input_list, samples) {
   
   # check if inout_list is of nanotail_polya_data class
@@ -491,7 +506,7 @@ filter_polya_list_samples <- function(input_list, samples) {
   #        call. = FALSE)
   # }
   
-  
+  output_list <- input_list
   
   #if samples are provided, leave only the listed samples in tje output list
   if (!missing(samples)) {
@@ -503,17 +518,32 @@ filter_polya_list_samples <- function(input_list, samples) {
     
     # check if each element of samples is present in meta column sample_name
     if (!all(samples %in% input_list$samples[[1]]$meta$sample_name)) {
-      stop("Some of the provided samples are not present in the input list",
+      stop("Some of the samples are not present in the input list",
            call. = FALSE)
     }
+    
     message("Filtering")
+    #filter the list, leaving only samples which are listed in the meta
+    output_samples <- lapply(input_list$samples, function(x) {
+      meta <- x$meta
+      
+      if (meta$sample_name %in% samples) {
+        message(meta$sample_name)
+        return(x)
+      }
+      else {
+        message(paste("filter out",meta$sample_name))
+        return(NULL)
+      }
+    })
     
-    Filter, leaving
+    #remove all NULL elements from output_samples list
+    output_samples <- output_samples[sapply(output_samples, function(x) !is.null(x))]
     
-  }
-  message("Filtering")
+    output_list$samples <- output_samples
   
-  
+  }  
+  return(output_list)
 }
 
 # filter_list is a list of pairs of column names and values from the metadata element of input_list
@@ -576,23 +606,4 @@ get_samples_list_from_metadata <- function(input_list,filter_list) {
   
 
   return(output)
-}
-
-
-get_metadata_table <- function(input_list) {
-  
-  # check if inout_list is of nanotail_polya_data class
-  # if (!is.nanotail_polya_data(input_list)) {
-  #   stop("Input should be provided as a nanotail_polya_data class",
-  #        call. = FALSE)
-  # }
-  
-  # return a data.frame with metadata columns from the input_list
-  output <- lapply(input_list$samples, function(x) {
-    return(x$meta)
-  })
-  
-  output <- do.call(rbind, output)
-  return(output)
-  
 }
