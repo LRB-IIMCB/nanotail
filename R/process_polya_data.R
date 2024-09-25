@@ -184,31 +184,31 @@ summarize_polya_list <- function(input_list,transcript=NA,transcript_id_column="
   }
 
   # check if each element of the list has another list named meta
-  if (!all(sapply(input_list, function(x) "meta" %in% names(x)))) {
+  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
     stop("Each element of the list should have another list named meta",
          call. = FALSE)
   }
   
   # check if each element of the list has another data element
-  if (!all(sapply(input_list, function(x) "data" %in% names(x)))) {
+  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
     stop("Each element of the list should have another data element",
          call. = FALSE)
   }
   
   # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list, function(x) is.data.frame(x$data)))) {
+  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
     stop("Each element of the list should have a data element which is a data.frame",
          call. = FALSE)
   }
   
   # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list, function(x) is.list(x$meta)))) {
+  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
     stop("Each element of the list should have a meta element which is a list",
          call. = FALSE)
   }
   
   # calculate - number of elements in each data element, mean, median, sd, min, max of polya_length column
-  output <- lapply(input_list, function(x) {
+  output <- lapply(input_list$samples, function(x) {
     
     if (!is.na(transcript)) {
       message("Filtering transcript",transcript)
@@ -227,7 +227,7 @@ summarize_polya_list <- function(input_list,transcript=NA,transcript_id_column="
     min_polya <- min(data$polya_length)
     max_polya <- max(data$polya_length)
     if (!is.na(transcript)) { # add transcript name to output, if was specified in function call.
-      meta$transcript <- transcript
+      meta[[transcript_id_column]] <- transcript
     }
     output <- c(n, mean_polya, median_polya, sd_polya, min_polya, max_polya)
     names(output) <- c("n", "mean_polya", "median_polya", "sd_polya", "min_polya", "max_polya")
@@ -357,25 +357,25 @@ filter_polya_list_by_transcript <- function(input_list, transcript,transcript_id
   
   
   # check if each element of the list has another list named meta
-  if (!all(sapply(input_list, function(x) "meta" %in% names(x)))) {
+  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
     stop("Each element of the list should have another list named meta",
          call. = FALSE)
   }
   
   # check if each element of the list has another data element
-  if (!all(sapply(input_list, function(x) "data" %in% names(x)))) {
+  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
     stop("Each element of the list should have another data element",
          call. = FALSE)
   }
   
   # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list, function(x) is.data.frame(x$data)))) {
+  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
     stop("Each element of the list should have a data element which is a data.frame",
          call. = FALSE)
   }
   
   # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list, function(x) is.list(x$meta)))) {
+  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
     stop("Each element of the list should have a meta element which is a list",
          call. = FALSE)
   }
@@ -383,14 +383,16 @@ filter_polya_list_by_transcript <- function(input_list, transcript,transcript_id
   # filter a data element of each element of the list, to keep only rows where transcript column is equal to the transcript argument
   # transcript column is specified by the transcript_id_column argument
   
-  output <- lapply(input_list, function(x) {
+  output <- lapply(input_list$samples, function(x) {
     data <- x$data
     meta <- x$meta
     data <- data[data[[transcript_id_column]] %in% transcript,]
     return(list(data = data, meta = meta))
   })
   
-  return(output)
+  output_list <- input_list
+  output_list$samples <- output
+  return(output_list)
   
 }
 
@@ -423,25 +425,25 @@ get_references <- function(input_list,reference_column="reference") {
   }
 
   # check if each element of the list has another list named meta
-  if (!all(sapply(input_list, function(x) "meta" %in% names(x)))) {
+  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
     stop("Each element of the list should have another list named meta",
          call. = FALSE)
   }
   
   # check if each element of the list has another data element
-  if (!all(sapply(input_list, function(x) "data" %in% names(x)))) {
+  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
     stop("Each element of the list should have another data element",
          call. = FALSE)
   }
   
   # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list, function(x) is.data.frame(x$data)))) {
+  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
     stop("Each element of the list should have a data element which is a data.frame",
          call. = FALSE)
   }
   
   # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list, function(x) is.list(x$meta)))) {
+  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
     stop("Each element of the list should have a meta element which is a list",
          call. = FALSE)
   }
@@ -464,75 +466,133 @@ get_references <- function(input_list,reference_column="reference") {
   # combine all the references for each list elements into single vector, with all values unique
   # return the produced vector
   
-  output <- unique(unlist(lapply(input_list, function(x) x$data[[reference_column]])))
+  output <- unique(unlist(lapply(input_list$samples, function(x) x$data[[reference_column]])))
+  return(output)
+}
+
+# TBD - not finished yet
+annotate_references <- function(input_list,method) {
+  
+  # check if input_list is provided as nanotail_polya_data class
+  # check for the presence of nanotail_polya_data class
+  if (!is.nanotail_polya_data(input_list)) {
+    stop("Input should be provided as a nanotail_polya_data class",
+         call. = FALSE)
+  }
+
+}
+
+
+filter_polya_list_samples <- function(input_list, samples) {
+  
+  # check if inout_list is of nanotail_polya_data class
+  # if (!is.nanotail_polya_data(input_list)) {
+  #   stop("Input should be provided as a nanotail_polya_data class",
+  #        call. = FALSE)
+  # }
+  
+  
+  
+  #if samples are provided, leave only the listed samples in tje output list
+  if (!missing(samples)) {
+    message("samples")
+    if (!is.character(samples)) {
+      stop("Samples should be provided as a character vector",
+           call. = FALSE)
+    }
+    
+    # check if each element of samples is present in meta column sample_name
+    if (!all(samples %in% input_list$samples[[1]]$meta$sample_name)) {
+      stop("Some of the provided samples are not present in the input list",
+           call. = FALSE)
+    }
+    message("Filtering")
+    
+    Filter, leaving
+    
+  }
+  message("Filtering")
+  
+  
+}
+
+# filter_list is a list of pairs of column names and values from the metadata element of input_list
+# values should be provided as vectors
+get_samples_list_from_metadata <- function(input_list,filter_list) {
+  
+  # check if inout_list is of nanotail_polya_data class
+  # if (!is.nanotail_polya_data(input_list)) {
+  #   stop("Input should be provided as a nanotail_polya_data class",
+  #        call. = FALSE)
+  # }
+  
+  # check if filter_list is provided
+  if (missing(filter_list)) {
+    stop("Filter list is missing. Please provide a valid filter_list argument",
+         call. = FALSE)
+  }
+  
+  # check if filter_list is a list
+  if (!is.list(filter_list)) {
+    stop("Filter list should be provided as a list",
+         call. = FALSE)
+  }
+  
+  # # check if each element of the list has another list named meta
+  # if (!all(sapply(filter_list, function(x) length(x) == 2))) {
+  #   stop("Each element of the list should have a pair of column name and value",
+  #        call. = FALSE)
+  # }
+  
+  # # check if each element of the list has another list named meta
+  # if (!all(sapply(filter_list, function(x) is.character(x[[1]])))) {
+  #   stop("First element of the pair should be a character vector",
+  #        call. = FALSE)
+  # }
+  # 
+  # # check if each element of the list has another list named meta
+  # if (!all(sapply(filter_list, function(x) is.character(x[[2]])))) {
+  #   stop("Second element of the pair should be a character vector",
+  #        call. = FALSE)
+  # }
+  # 
+  # check if each element of the list has another list named meta
+  if (!names(filter_list) %in% names(input_list$samples[[1]]$meta)) {
+    stop("First element of the pair should be a column name from the metadata",
+         call. = FALSE)
+  }
+  
+  
+  # Using provided filters, return a character vector of samples names (column sample_name in meta) that match all of the criteria,
+  # we are not interested in the whole samples element, with data, just the vector of name
+  output <- lapply(input_list$samples, function(x) {
+    meta <- x$meta
+    for (i in 1:length(filter_list)) {
+      meta <- meta[meta[[names(filter_list)[[i]]]] %in% filter_list[[i]],]
+    }
+    return(meta$sample_name)
+  })
+  
+  
+
   return(output)
 }
 
 
-# a function which will take a list as the input, and parse content of  "reference" column in the data element of each element list into gene id (2nd column after strsplit), transcript id (first column after strsplit) and symbol (6th column after strsplit).
-# from transcript and gene id remove dot and everything after it
-
-parse_gencode_headers <- function(input_list, remove_reference_column = FALSE) {
+get_metadata_table <- function(input_list) {
   
-  # check if input_list is provided
-  if (missing(input_list)) {
-    stop("List is missing. Please provide a valid list argument",
-         call. = FALSE)
-  }
-  # check if input_list is a list
-  checkmate::assert_list(input_list)
-  # if (!is.list(input_list)) {
-  #   stop("List should be provided as a list",
+  # check if inout_list is of nanotail_polya_data class
+  # if (!is.nanotail_polya_data(input_list)) {
+  #   stop("Input should be provided as a nanotail_polya_data class",
   #        call. = FALSE)
   # }
   
-  # check if input_list has at least one element
-  if (length(input_list) < 1) {
-    stop("List should have at least one element",
-         call. = FALSE)
-  }
+  # return a data.frame with metadata columns from the input_list
+  output <- lapply(input_list$samples, function(x) {
+    return(x$meta)
+  })
   
-  # check if input_list has elements named data and meta
-  if (!all(c("data","meta") %in% names(input_list[[1]]))) {
-    stop("List should have elements named data and meta",
-         call. = FALSE)
-  }
-  
-  # check if input_list has elements named data and meta which are lists
-  if (!all(sapply(input_list, function(x) is.list(x$data)))) {
-    stop("Elements named data should be lists",
-         call. = FALSE)
-  }
-  
-  # check if input_list has elements named data and meta which are lists
-  if (!all(sapply(input_list, function(x) is.list(x$meta)))) {
-    stop("Elements named meta should be lists",
-         call. = FALSE)
-  }
-  
-  
-  # parse content of "reference" column in the data element of each element list into gene id (2nd column after strsplit), transcript id (first column after strsplit) and symbol (6th column after strsplit).
-  # every row of data should be processed, do not output strsplit for first row only
-  # elements in refernce are separated by |
-  # use gsub
-  # from transcript and gene id remove dot and everything after it
-  
-  for (i in 1:length(input_list)) {
-    split_reference <- strsplit(input_list[[i]]$data$reference,"\\|")
-    input_list[[i]]$data$gene_id <- sapply(split_reference,function(x) gsub("\\..*","",x[2]))
-    input_list[[i]]$data$transcript_id <- sapply(split_reference,function(x) gsub("\\..*","",x[1]))
-    input_list[[i]]$data$symbol <- sapply(split_reference,function(x) x[6])
-    
-    # remove reference column if requested
-    if (remove_reference_column) {
-      input_list[[i]]$data$reference <- NULL
-    }
-  }
-  
-  
-  
-  
-  return(input_list)
-  
+  output <- do.call(rbind, output)
+  return(output)
   
 }
