@@ -135,3 +135,61 @@ annotate_with_org_packages <- function(polya_data,columns_of_annotation=c("GENEN
   return(polya_data_annotated)
 }
 
+
+
+
+#' Parse references provided in the gencode format 
+#' 
+#' 
+#' @param input_vector vector with gencode-formatted references
+#' 
+#' @return a \link[tibble]{tibble}
+#' @export
+#' 
+#' @examples
+#' parse_gencode_headers(c("ENST00000456328|ENSG00000223997|OTTHUMG00000000961|OTTHUMT00000002844.2|OTTHUMT00000002844|DDX11L1|202|processed_transcript|","ENST00000450305|ENSG00000223997|OTTHUMG00000000961|OTTHUMT00000002844.2|OTTHUMT00000002844|DDX11L1|202|processed_transcript|"))
+#' 
+#' 
+parse_gencode_headers <- function(input_vector) {
+  
+  # check if input_list is provided
+  if (missing(input_vector)) {
+    stop("Input vector with gencode-formatted references is missing. Please provide a valid argument",
+         call. = FALSE)
+  }
+  
+  # check if input_list has at least one element
+  if (length(input_vector) < 1) {
+    stop("Input vector should have at least one element",
+         call. = FALSE)
+  }
+  
+  
+  gencode_elements_no = sum(grepl("^ENST.*\\|ENSG.*\\|$",input_vector))
+  vector_length = length(input_vector)
+  
+  
+  if (!gencode_elements_no>0) {
+    stop("No gencode reference provided",
+         call. = FALSE)
+  }
+  
+  # check if input_vector 1st element is formatted as gencode transcriptome reference
+  if (!gencode_elements_no==vector_length) {
+    warning("Not all of provided vector elements contain gencode-formatted reference. Proceeding anyway")
+  }
+  
+  
+  extract_annotations <- function(x) {
+    parts <- strsplit(x, "\\|")[[1]]
+    ensembl_transcript_id <- ifelse(length(parts) >= 1, parts[1], x)
+    ensembl_gene_id <- ifelse(length(parts) >= 3, parts[3], x)
+    symbol <- ifelse(length(parts) >= 6, parts[6], x)
+    return(c(reference=x,ensembl_transcript_id = ensembl_transcript_id, ensembl_gene_id = ensembl_gene_id, symbol = symbol))
+  }
+  
+  annotations <- data.frame(t(sapply(input_vector, extract_annotations,USE.NAMES = FALSE)))
+  
+  return(annotations)
+  
+}
