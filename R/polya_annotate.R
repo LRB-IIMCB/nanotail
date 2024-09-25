@@ -140,10 +140,13 @@ annotate_with_org_packages <- function(polya_data,columns_of_annotation=c("GENEN
 
 #' Parse references provided in the gencode format 
 #' 
-#' 
 #' @param input_vector vector with gencode-formatted references
 #' 
-#' @return a \link[tibble]{tibble}
+#' @return a data.frame with parsed elements:
+#'  - reference: original reference
+#'  - ensembl_transcript_id: ensembl transcript id (without version number)
+#'  - ensembl_gene_id: ensembl gene id (without version number)
+#'  - symbol: gene symbol
 #' @export
 #' 
 #' @examples
@@ -164,6 +167,11 @@ parse_gencode_headers <- function(input_vector) {
          call. = FALSE)
   }
   
+  #check if character vector is provided
+  if (!is.character(input_vector)) {
+    stop("Input vector should be a character vector",
+         call. = FALSE)
+  }
   
   gencode_elements_no = sum(grepl("^ENST.*\\|ENSG.*\\|$",input_vector))
   vector_length = length(input_vector)
@@ -183,13 +191,108 @@ parse_gencode_headers <- function(input_vector) {
   extract_annotations <- function(x) {
     parts <- strsplit(x, "\\|")[[1]]
     ensembl_transcript_id <- ifelse(length(parts) >= 1, parts[1], x)
-    ensembl_gene_id <- ifelse(length(parts) >= 3, parts[3], x)
+    # remove all digits after dot in the end of ensembl_transcript_id
+    ensembl_transcript_id <- gsub("\\..*$","",ensembl_transcript_id)
+    ensembl_gene_id <- ifelse(length(parts) >= 2, parts[2], x)
+    ensembl_gene_id <- gsub("\\..*$","",ensembl_gene_id)
     symbol <- ifelse(length(parts) >= 6, parts[6], x)
     return(c(reference=x,ensembl_transcript_id = ensembl_transcript_id, ensembl_gene_id = ensembl_gene_id, symbol = symbol))
   }
   
-  annotations <- data.frame(t(sapply(input_vector, extract_annotations,USE.NAMES = FALSE)))
+  annotations <- data.frame(t(sapply(input_vector, extract_annotations,USE.NAMES = FALSE)),stringsAsFactors = TRUE)
   
   return(annotations)
   
+}
+
+#' Annotate references with ensembl gene and transcript ids and gene symbol, parsing gencode headers
+#' 
+#' @param input_list list with references element
+#' 
+#' @return a list with 'references' element with added columns:
+#' - ensembl_gene_id: ensembl gene id (without version number
+#' - ensemble_transcript_id: ensembl transcript id (without version number)
+#' - symbol: gene symbol
+#' 
+#' @export
+#' 
+#' @examples
+#' \dontrun{
+#' 
+#' annotate_references_with_gencode(polya_data)
+#' 
+#' }
+#' 
+annotate_references_with_gencode <- function(input_list) {
+#use parse_gencode_headers to populate references data.frame from input_list with ensembl_gene_id, transcript_id and symbol
+  
+  if (missing(input_list)) {
+    stop("Input list is missing. Please provide a valid argument",
+         call. = FALSE)
+  }
+  
+  if (!is.list(input_list)) {
+    stop("Input should be a list",
+         call. = FALSE)
+  }
+  
+  
+  # check if references elements is present in the list
+  if (!'references' %in% names(input_list)) {
+    stop("Input list should contain 'references' element",
+         call. = FALSE)
+  }
+  
+  annotations <- parse_gencode_headers(input_list$references$reference)
+  output <- input_list
+  output$references <- annotations
+  
+  return(output)
+  
+}
+
+#' Annotate poly(A) data frame with ensembl gene and transcript ids from annotation data frame
+#' 
+#' @param input_data_frame data frame with poly(A) data
+#' @param annotated_references data frame with annotated references
+#' 
+#' @return a data.frame with added columns:
+#' - ensembl_gene_id: ensembl gene id (without version number
+#' - ensemble_transcript_id: ensembl transcript id (without version number)
+#' - symbol: gene symbol
+#' 
+#' @export
+#' 
+#' @examples
+#' \dontrun{
+#' 
+#' annotate_polya_data(example_valid_polya_table,annotated_references)
+#' 
+#' }
+#' 
+annotate_polya_data <- function(input_data_frame,annotated_references) {
+  
+  
+  if (missing(input_data_frame)) {
+    stop("Input data_frame is missing. Please provide a valid argument",
+         call. = FALSE)
+  }
+  
+  if (!is.data.frame(input_data_frame)) {
+    stop("Input should be a data.frame",
+         call. = FALSE)
+  }
+  
+  if (missing(annotated_references)) {
+    stop("Input annotated_references is missing. Please provide a valid argument",
+         call. = FALSE)
+  }
+  
+  
+  
+  input_data_frame$ensembl_gene_id<-annotated_references$symbol[match(input_data_frame$reference,annotated_references$reference)]
+  input_data_frame$ensembl_transcript_id<-annotated_references$ensembl_transcript_id[match(input_data_frame$reference,annotated_references$reference)]
+  input_data_frame$symbol<-annotated_references$symbol[match(input_data_frame$reference,annotated_references$reference)]
+
+  return(input_data_frame)
 }
