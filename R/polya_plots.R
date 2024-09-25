@@ -791,3 +791,24 @@ plot_quantiles <- function(summarized_data,transcript_id,transcript_id_column="t
   return(quant_plot)
 }
 
+
+
+# plot boxplot of polya_length for all, or selected samples
+plot_polya_boxplot <- function(input_list,grouping_factor="sample_name",transcript,transcript_id_column='transcript') {
+  
+  #first, if transcript is specified, filter polya_list for selected transcipts only, using filter_polya_list_by_transcript functio
+  
+  if(!missing(transcript)) {
+    input_list <- filter_polya_list_by_transcript(input_list,transcript = transcript, transcript_id_column = transcript_id_column)
+  }
+  
+  # get data frame with data to plot: metadata and poly_length
+  # use polya_list_to_data_frame function
+  data_for_plot <- polya_list_to_data_frame(input_list)
+  
+  # plot boxplot of polya_length by grouping_factor
+  
+  plot <- ggplot(data_for_plot,aes(x=.data[[grouping_factor]],y=.data[["polya_length"]])) + geom_boxplot()
+  
+ return(plot) 
+}
