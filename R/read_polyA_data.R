@@ -169,14 +169,14 @@ read_polya_single <- function(polya_path, gencode = TRUE, verbose=TRUE, sample_n
     # transcript names, if mapping to gencode transcriptome
    
 
-    if(!is.na(sample_name)) {
-      # set sample_name (if was set)
-      if ("sample_name" %in% colnames(polya_data)) {
-        warning("sample_name was provided in the input file. Overwriting with the provided one")
-      }
-      polya_data$sample_name = sample_name
-      polya_data$sample_name <- as.factor(polya_data$sample_name)
-    }
+    # if(!is.na(sample_name)) {
+    #   # set sample_name (if was set)
+    #   if ("sample_name" %in% colnames(polya_data)) {
+    #     warning("sample_name was provided in the input file. Overwriting with the provided one")
+    #   }
+    #   polya_data$sample_name = sample_name
+    #   polya_data$sample_name <- as.factor(polya_data$sample_name)
+    # }
 
     return(polya_data)
 }
@@ -302,7 +302,7 @@ read_polya_multiple <- function(input_table,verbose=TRUE,process_references=TRUE
       message(paste0("Processing sample ",i," out of ",nrow(input_table)))
     }
     
-    output$samples[[input_table$sample_id[i]]] <- list(data = read_polya_single(input_table$polya_path[i], sample_name = input_table$sample_name[i],...))
+    output$samples[[input_table$sample_id[i]]] <- list(data = read_polya_single(input_table$polya_path[i], ...))
     output$samples[[input_table$sample_id[i]]]$meta <- input_table[i, -which(names(input_table) %in% c("polya_path"))]
   }
   
