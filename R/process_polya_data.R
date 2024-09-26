@@ -48,8 +48,14 @@ polya_list_to_data_frame <- function(input_list) {
          call. = FALSE)
   }
   
-  # skip empty data.frames
-  input_list <- input_list[sapply(input_list$samples, function(x) nrow(x$data) > 0)]
+  # remove elements from samples, if data is empty (nrow == 0)
+  input_list$samples <- lapply(input_list$samples, function(x) {
+    if (nrow(x$data) == 0) {
+      return(NULL)
+    } else {
+      return(x)
+    }
+  })
   
   # add metadata to data
   for (i in 1:length(input_list$samples)) {
@@ -72,7 +78,7 @@ polya_list_to_data_frame <- function(input_list) {
 #' @export
 #'
 #' @examples
-get_transcript_data_from_polya_list <- function(input_list, transcript,transcript_id_column="transcript") {
+get_transcript_df_from_polya_list <- function(input_list, transcript,transcript_id_column="transcript") {
   # check if input_list is provided
   if (missing(input_list)) {
     stop("List is missing. Please provide a valid list argument",
@@ -132,26 +138,11 @@ get_transcript_data_from_polya_list <- function(input_list, transcript,transcrip
   # filter a data element of each element of the list, to keep only rows where transcript column is equal to the transcript argument
   # transcript column is specified by the transcript_id_column argument
 
-  output <- lapply(input_list$samples, function(x) {
-    data <- x$data
-    meta <- x$meta
-    data <- data[data[[transcript_id_column]] %in% transcript,]
-    return(list(data = data, meta = meta))
-  })
+  input_list <- filter_polya_list_by_transcript(input_list = input_list,transcript = transcript,transcript_id_column = transcript_id_column)
   
+  output_df <- polya_list_to_data_frame(input_list)
   
-  
-  # add metadata to data
-  
-  for (i in 1:length(output)) {
-    output[[i]]$data <- cbind(output[[i]]$meta, output[[i]]$data,)
-  }
-  
-  # return a data.frame
-  message("output data.frame")
-  output <- do.call(rbind, lapply(input_list, function(x) x$data))
-  return(output)
-  
+  return(output_df)
 }
 
 
@@ -207,18 +198,15 @@ summarize_polya_list <- function(input_list,transcript=NA,transcript_id_column="
          call. = FALSE)
   }
   
+  if (!is.na(transcript)) {
+    message(paste0("Filtering transcripts by ",transcript_id_column," = ",transcript))
+    input_list <- filter_polya_list_by_transcript(input_list,transcript_id_column=transcript_id_column,transcript=transcript)
+  }
+  
   # calculate - number of elements in each data element, mean, median, sd, min, max of polya_length column
   output <- lapply(input_list$samples, function(x) {
     
-    if (!is.na(transcript)) {
-      message("Filtering transcript",transcript)
-      data <- x$data
-      data <- data[data[[transcript_id_column]] %in% transcript,]
-      x$data <- data
-    }
-    else {
-      data <- x$data
-    }
+    data <- x$data
     meta <- x$meta
     n <- nrow(data)
     mean_polya <- mean(data$polya_length)
@@ -237,6 +225,7 @@ summarize_polya_list <- function(input_list,transcript=NA,transcript_id_column="
   
   # add content of metadata for each sample as first columns of the output
   output <- do.call(rbind, output)
+  rownames(output) <- NULL
   return(output)
 }
 
@@ -280,37 +269,40 @@ drop_polya_list_metadata <- function(input_list, metadata) {
   }
   
   # check if each element of the list has another list named meta
-  if (!all(sapply(input_list, function(x) "meta" %in% names(x)))) {
+  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
     stop("Each element of the list should have another list named meta",
          call. = FALSE)
   }
   
   # check if each element of the list has another data element
-  if (!all(sapply(input_list, function(x) "data" %in% names(x)))) {
+  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
     stop("Each element of the list should have another data element",
          call. = FALSE)
   }
   
   # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list, function(x) is.data.frame(x$data)))) {
+  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
     stop("Each element of the list should have a data element which is a data.frame",
          call. = FALSE)
   }
   
   # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list, function(x) is.list(x$meta)))) {
+  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
     stop("Each element of the list should have a meta element which is a list",
          call. = FALSE)
   }
   
   # filter metadata columns of each element of the list
-  output <- lapply(input_list, function(x) {
+  output_samples <- lapply(input_list$samples, function(x) {
     meta <- x$meta
     meta <- meta[metadata]
     return(list(data = x$data, meta = meta))
   })
   
-  return(output)
+  input_list$samples <- output_samples
+  input_list$metadata_table <- input_list$metadata_table[metadata]
+  
+  return(input_list)
 }
 
 
@@ -349,6 +341,14 @@ filter_polya_list_by_transcript <- function(input_list, transcript,transcript_id
          call. = FALSE)
   }
   
+  
+  
+  # check if input_list samples is a list
+  if (!is.list(input_list$samples)) {
+    stop("There should be a 'samples' list provided in the input_list",
+         call. = FALSE)
+  }
+  
   # check if transcript is a character vector or single character
   if (!is.character(transcript) & length(transcript) != 1) {
     stop("Transcript should be a character vector or single character",
@@ -383,18 +383,23 @@ filter_polya_list_by_transcript <- function(input_list, transcript,transcript_id
   # filter a data element of each element of the list, to keep only rows where transcript column is equal to the transcript argument
   # transcript column is specified by the transcript_id_column argument
   
-  output <- lapply(input_list$samples, function(x) {
+  # get references from references data.frame based on provided transcript ids
+  references_table <- input_list$references
+  filtered_references <- references_table[references_table[[transcript_id_column]] %in% transcript,]$reference
+  message(filtered_references)
+  
+  output_samples <- lapply(input_list$samples, function(x) {
     data <- x$data
     meta <- x$meta
-    data <- data[data[[transcript_id_column]] %in% transcript,]
+    data <- data[data[["reference"]] %in% filtered_references,]
     return(list(data = data, meta = meta))
   })
   
-  output_list <- input_list
-  output_list$samples <- output
-  return(output_list)
-  
+  input_list$samples <- output_samples
+  return(input_list)
+
 }
+
 
 #' Get references from the list of poly(A) predictions
 #' 
@@ -470,17 +475,6 @@ get_references <- function(input_list,reference_column="reference") {
   return(output)
 }
 
-# TBD - not finished yet
-annotate_references <- function(input_list,method) {
-  
-  # check if input_list is provided as nanotail_polya_data class
-  # check for the presence of nanotail_polya_data class
-  if (!is.nanotail_polya_data(input_list)) {
-    stop("Input should be provided as a nanotail_polya_data class",
-         call. = FALSE)
-  }
-
-}
 
 
 #' Filter samples from the list of poly(A) predictions
