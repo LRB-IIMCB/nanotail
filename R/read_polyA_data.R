@@ -306,7 +306,10 @@ read_polya_multiple <- function(input_table,verbose=TRUE,process_references=TRUE
     output$samples[[input_table$sample_id[i]]]$meta <- input_table[i, -which(names(input_table) %in% c("polya_path"))]
   }
   
-  if (process_references) {
+  
+  output$metadata_table <- input_table
+  
+    if (process_references) {
     # get mapped references for all samples and store in the "references" element of the list
     if (verbose) {
       message("Processing references")
