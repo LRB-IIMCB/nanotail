@@ -281,32 +281,147 @@ load_yaml_samples <- function(yaml_path) {
   return(input_samples_table)
 }
 
-is.nanotail_polya_data <- function(input_list) {
+
+#' Check if provided list is of class nanotail_polya_data
+#' 
+#' @param input_list list to be checked
+#' 
+#' @return boolean
+#' @export
+#' 
+#' @examples
+#' \dontrun{
+#' 
+#' is.nanotail_polya_data(input_list)
+#' 
+#' }
+#' 
+is.nanotail_polya_data <- function(input_list,verbose=T) {
   if (missing(input_list)) {
+    
     stop("Input  is missing. Please provide a valid argument",
          call. = FALSE)
   }
   
   # check presence of class nanotail_polya_data
-  if (!class(x) %in% c("nanotail_polya_data")) {
-    stop("Not all of the provided list elements are of class nanotail_polya_data. Please provide valid polya data",
-         call. = FALSE)
+  if (!"nanotail_polya_data" %in% class(input_list)) {
+    if (verbose) {
+      warning("Provided input_list is not of class nanotail_polya_data. Please provide valid input, loaded with the read_polya_multiple() function")
+    }
+    return(FALSE)
   }
   
   if (length(input_list) < 1) {
-    stop("Input list should have at least one element",
-         call. = FALSE)
+    if (verbose) {
+      warning("Input list should have at least one element")
+    }
+    return(FALSE)
   }
   
-  if (!all(sapply(input_list, function(x) {is.data.frame(x)}))) {
-    stop("Not all of the provided list elements are data frames. Please provide valid polya data",
+  if (length(input_list$samples) < 1) {
+    if (verbose) {
+      warning("Input list should have at least one sample")
+    }
+    return(FALSE)
+  }
+
+  return(TRUE)
+}
+
+#' Validate if provided object matches requirements of nanotail_polya_data class
+#' 
+#' @param input_list list to be checked
+#' 
+#' @return boolean
+#' 
+#' @export
+#' 
+#' @examples
+#' \dontrun{
+#' 
+#' validate_nanotail_polya_data(input_list)
+#' 
+#' }
+#' 
+validate_nanotail_polya_data <- function(input_list,verbose=T) {
+  if (!is.nanotail_polya_data(input_list)) {
+    warning("Provided input_list is not of class nanotail_polya_data.",
          call. = FALSE)
   }
+
+  if (length(input_list) < 1) {
+    if (verbose) {
+      warning("Input list should have at least one element")
+    }
+    return(FALSE)
+  }
   
-  if (!all(sapply(input_list, function(x) {all(c("transcript","polya_length") %in% colnames(x))}))) {
-    stop("Not all of the provided data frames contain required columns. Please provide valid polya data",
-         call. = FALSE)
+  if (length(input_list$samples) < 1) {
+    if (verbose) {
+      warning("Input list should have at least one sample")
+    }
+    return(FALSE)
+  }
+  
+  # check if each element of the list has another list named meta
+  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
+    if (verbose) {
+      warning("Each element of the list should have another list named meta")
+    }
+    return(FALSE)
+  }
+  
+  # check if each element of the list has another data element
+  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
+    if (verbose) {
+      warning("Each element of the list should have another data element")
+    }
+    return(FALSE)
+  }
+  
+  # check if each element of the list has a data element which is a data.frame
+  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
+    if (verbose) {
+      warning("Each element of the list should have a data element which is a data.frame")
+    }
+    return(FALSE)
+  }
+  
+  # check if each element of the list has a meta element which is a list
+  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
+    if (verbose) {
+      warning("Each element of the list should have a meta element which is a list")
+    }
+    return(FALSE)
+  }
+  
+  # check if all meta elements match metadata_table (the same column names)
+  if (!all(sapply(input_list$samples, function(x) all(names(x$meta) %in% colnames(input_list$metadata_table))))){
+    if (verbose) {
+      warning("All meta elements should match metadata_table (the same columns)")
+    }
+    return(FALSE)
+  }
+  
+  # check if all meta elements match metadata_table (the same values)
+  if (!all(sapply(input_list$samples, function(x) all(x$meta %in% input_list$metadata_table))) ){
+    if (verbose) {
+      warning("All meta elements should match metadata_table (the same values)")
+    }
+    return(FALSE)
   }
   
   return(TRUE)
+  
+  # check if all samples are present in the metadata_table
+  if (!all(names(input_list$samples) %in% input_list$metadata_table$sample_id)) {
+    if (verbose) {
+      warning("All samples should be present in the metadata_table")
+    }
+    return(FALSE)
+  }
+  
+
+  
+  
 }
