@@ -1,9 +1,22 @@
 #' Convert a list with poly(A) predictions to long format data.frame with metadata columns (like in the original nanoTail)
 #'
+#' @description
+#' When data are loaded by the Nanotail package thery are stored as list of class "nanotail_polya_data", 
+#' which is convenient for internal processing but not for further analysis, including visualization. 
+#' This function converts the nanotail_polya_data list to a data.frame, containing all per-read poly(A) data
+#' with metadata stored as separate columns.
+#' 
 #' @param input_list a list - output of read_polya_multiple() with poly(A) predictions
 #'
 #' @return data.frame (tibble)
 #' @export
+#' 
+#' @examples
+#' \dontrun{
+#' 
+#' polya_list_to_data_frame(input_list)
+#' 
+#' }
 #'
 polya_list_to_data_frame <- function(input_list) {
   # check if input_list is provided
@@ -11,42 +24,14 @@ polya_list_to_data_frame <- function(input_list) {
     stop("List is missing. Please provide a valid list argument",
          call. = FALSE)
   }
-  # check if input_list is a list
-  if (!is.list(input_list)) {
-    stop("Input should be provided as a list",
+  
+  # check if input_list is a nanotail class
+  if (!is.nanotail_polya_data(input_list)) {
+    stop("Input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
          call. = FALSE)
   }
   
-  # check if input_list samples is a list
-  if (!is.list(input_list$samples)) {
-    stop("There should be a 'samples' list provided in the input_list",
-         call. = FALSE)
-  }
   
-
-  # check if each element of the samples list has another list named meta
-  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
-    stop("Each element of the list should have another list named meta",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has another data element
-  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
-    stop("Each element of the list should have another data element",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
-    stop("Each element of the list should have a data element which is a data.frame",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
-    stop("Each element of the list should have a meta element which is a list",
-         call. = FALSE)
-  }
   
   # remove elements from samples, if data is empty (nrow == 0)
   input_list$samples <- lapply(input_list$samples, function(x) {
@@ -78,69 +63,39 @@ polya_list_to_data_frame <- function(input_list) {
 #' @export
 #'
 #' @examples
-get_transcript_df_from_polya_list <- function(input_list, transcript,transcript_id_column="transcript") {
+get_transcript_df_from_polya_list <- function(input_list, transcript_ids,transcript_id_column="transcript",...) {
   # check if input_list is provided
   if (missing(input_list)) {
     stop("List is missing. Please provide a valid list argument",
          call. = FALSE)
   }
-  # check if input_list is a list
-  if (!is.list(input_list)) {
-    stop("List should be provided as a list",
+  # check if input_list is a nanotail class
+  if (!is.nanotail_polya_data(input_list)) {
+    stop("Input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
          call. = FALSE)
   }
   
   # check if transcript is provided
-  if (missing(transcript)) {
+  if (missing(transcript_ids)) {
     stop("Transcript is missing. Please provide a valid transcript argument",
          call. = FALSE)
   }
   
   
-  
-  # check if input_list samples is a list
-  if (!is.list(input_list$samples)) {
-    stop("There should be a 'samples' list provided in the input_list",
-         call. = FALSE)
-  }
-  
   # check if transcript is a character vector or single character
-  if (!is.character(transcript) & length(transcript) != 1) {
+  if (!is.character(transcript_ids) & length(transcript) != 1) {
     stop("Transcript should be a character vector or single character",
          call. = FALSE)
   }
   
   
-  # check if each element of the list has another list named meta
-  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
-    stop("Each element of the list should have another list named meta",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has another data element
-  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
-    stop("Each element of the list should have another data element",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
-    stop("Each element of the list should have a data element which is a data.frame",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
-    stop("Each element of the list should have a meta element which is a list",
-         call. = FALSE)
-  }
-  
+
   # filter a data element of each element of the list, to keep only rows where transcript column is equal to the transcript argument
   # transcript column is specified by the transcript_id_column argument
 
-  input_list <- filter_polya_list_by_transcript(input_list = input_list,transcript = transcript,transcript_id_column = transcript_id_column)
+  input_list <- filter_polya_list_by_transcript(input_list = input_list,transcript_ids = transcript_ids,transcript_id_column = transcript_id_column,...)
   
-  output_df <- polya_list_to_data_frame(input_list)
+  output_df <- polya_list_to_data_frame(input_list,...)
   
   return(output_df)
 }
@@ -162,45 +117,24 @@ get_transcript_df_from_polya_list <- function(input_list, transcript,transcript_
 #' }
 #' 
 
-summarize_polya_list <- function(input_list,transcript=NA,transcript_id_column="transcript") {
+summarize_polya_list <- function(input_list,transcript_ids=NA,transcript_id_column="transcript",...) {
   # check if input_list is provided
   if (missing(input_list)) {
     stop("List is missing. Please provide a valid list argument",
          call. = FALSE)
   }
-  # check if input_list is a list
-  if (!is.list(input_list)) {
-    stop("List should be provided as a list",
+  
+  # check if input_list is a nanotail class
+  if (!is.nanotail_polya_data(input_list)) {
+    stop("Input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
          call. = FALSE)
   }
 
-  # check if each element of the list has another list named meta
-  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
-    stop("Each element of the list should have another list named meta",
-         call. = FALSE)
-  }
+ 
   
-  # check if each element of the list has another data element
-  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
-    stop("Each element of the list should have another data element",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
-    stop("Each element of the list should have a data element which is a data.frame",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
-    stop("Each element of the list should have a meta element which is a list",
-         call. = FALSE)
-  }
-  
-  if (!is.na(transcript)) {
-    message(paste0("Filtering transcripts by ",transcript_id_column," = ",transcript))
-    input_list <- filter_polya_list_by_transcript(input_list,transcript_id_column=transcript_id_column,transcript=transcript)
+  if (!is.na(transcript_ids)) {
+    message(paste0("Filtering transcripts by ",transcript_id_column," = ",transcript_ids))
+    input_list <- filter_polya_list_by_transcript(input_list,transcript_id_column=transcript_id_column,transcript_ids=transcript_ids,...)
   }
   
   # calculate - number of elements in each data element, mean, median, sd, min, max of polya_length column
@@ -214,8 +148,9 @@ summarize_polya_list <- function(input_list,transcript=NA,transcript_id_column="
     sd_polya <- sd(data$polya_length)
     min_polya <- min(data$polya_length)
     max_polya <- max(data$polya_length)
-    if (!is.na(transcript)) { # add transcript name to output, if was specified in function call.
-      meta[[transcript_id_column]] <- transcript
+    if (!is.na(transcript_ids)) { # add transcript names to output, if was specified in function call.
+      transcript_ids <- paste0(transcript_ids,sep=",")
+      meta[[transcript_id_column]] <- transcript_ids
     }
     output <- c(n, mean_polya, median_polya, sd_polya, min_polya, max_polya)
     names(output) <- c("n", "mean_polya", "median_polya", "sd_polya", "min_polya", "max_polya")
@@ -250,9 +185,9 @@ drop_polya_list_metadata <- function(input_list, metadata) {
     stop("List is missing. Please provide a valid list argument",
          call. = FALSE)
   }
-  # check if input_list is a list
-  if (!is.list(input_list)) {
-    stop("List should be provided as a list",
+  # check if input_list is a nanotail class
+  if (!is.nanotail_polya_data(input_list)) {
+    stop("Input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
          call. = FALSE)
   }
   
@@ -268,29 +203,7 @@ drop_polya_list_metadata <- function(input_list, metadata) {
          call. = FALSE)
   }
   
-  # check if each element of the list has another list named meta
-  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
-    stop("Each element of the list should have another list named meta",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has another data element
-  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
-    stop("Each element of the list should have another data element",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
-    stop("Each element of the list should have a data element which is a data.frame",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
-    stop("Each element of the list should have a meta element which is a list",
-         call. = FALSE)
-  }
+ 
   
   # filter metadata columns of each element of the list
   output_samples <- lapply(input_list$samples, function(x) {
@@ -323,76 +236,53 @@ drop_polya_list_metadata <- function(input_list, metadata) {
 #' filter_data(input_list,transcript=c("ACTB"),transcript_id_column="transcript")
 #' 
 #' }
-filter_polya_list_by_transcript <- function(input_list, transcript,transcript_id_column="transcript") {
+filter_polya_list_by_transcript <- function(input_list, transcript_ids,transcript_id_column="transcript",verbose=TRUE) {
   # check if input_list is provided
   if (missing(input_list)) {
     stop("List is missing. Please provide a valid list argument",
          call. = FALSE)
   }
-  # check if input_list is a list
-  if (!is.list(input_list)) {
-    stop("List should be provided as a list",
+  # check if input_list is a nanotail class
+  if (!is.nanotail_polya_data(input_list)) {
+    stop("Input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
          call. = FALSE)
   }
   
   # check if transcript is provided
-  if (missing(transcript)) {
+  if (missing(transcript_ids)) {
     stop("Transcript is missing. Please provide a valid transcript argument",
          call. = FALSE)
   }
   
-  
-  
-  # check if input_list samples is a list
-  if (!is.list(input_list$samples)) {
-    stop("There should be a 'samples' list provided in the input_list",
-         call. = FALSE)
-  }
-  
   # check if transcript is a character vector or single character
-  if (!is.character(transcript) & length(transcript) != 1) {
+  if (!is.character(transcript_ids) & length(transcript_ids) != 1) {
     stop("Transcript should be a character vector or single character",
          call. = FALSE)
   }
   
-  
-  # check if each element of the list has another list named meta
-  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
-    stop("Each element of the list should have another list named meta",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has another data element
-  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
-    stop("Each element of the list should have another data element",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
-    stop("Each element of the list should have a data element which is a data.frame",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
-    stop("Each element of the list should have a meta element which is a list",
-         call. = FALSE)
-  }
-  
-  # filter a data element of each element of the list, to keep only rows where transcript column is equal to the transcript argument
-  # transcript column is specified by the transcript_id_column argument
-  
   # get references from references data.frame based on provided transcript ids
-  references_table <- input_list$references
-  filtered_references <- references_table[references_table[[transcript_id_column]] %in% transcript,]$reference
-  message(filtered_references)
+  if (transcript_id_column=='reference') {
+    filtered_references <- transcript_ids
+    if (verbose) {
+      message("Using provided reference ids for data filtering")
+    }
+  }
+  else {
+    references_table <- input_list$references 
+    filtered_references <- references_table[references_table[[transcript_id_column]] %in% transcript_ids,]$reference
+    if (verbose) {
+      message(paste0("Got reference ids using provided transcript_ids stored in column",transcript_id_column))
+    }
+  }
   
   output_samples <- lapply(input_list$samples, function(x) {
     data <- x$data
     meta <- x$meta
     data <- data[data[["reference"]] %in% filtered_references,]
     return(list(data = data, meta = meta))
+    if (verbose) {
+      message(paste0("Filtered data for ",length(transcript_ids)," transcript ids"))
+    }
   })
   
   input_list$samples <- output_samples
@@ -423,36 +313,12 @@ get_references <- function(input_list,reference_column="reference") {
     stop("List is missing. Please provide a valid list argument",
          call. = FALSE)
   }
-  # check if input_list is a list
-  if (!is.list(input_list)) {
-    stop("List should be provided as a list",
+  # check if input_list is a nanotail class
+  if (!is.nanotail_polya_data(input_list)) {
+    stop("Input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
          call. = FALSE)
   }
 
-  # check if each element of the list has another list named meta
-  if (!all(sapply(input_list$samples, function(x) "meta" %in% names(x)))) {
-    stop("Each element of the list should have another list named meta",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has another data element
-  if (!all(sapply(input_list$samples, function(x) "data" %in% names(x)))) {
-    stop("Each element of the list should have another data element",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a data element which is a data.frame
-  if (!all(sapply(input_list$samples, function(x) is.data.frame(x$data)))) {
-    stop("Each element of the list should have a data element which is a data.frame",
-         call. = FALSE)
-  }
-  
-  # check if each element of the list has a meta element which is a list
-  if (!all(sapply(input_list$samples, function(x) is.list(x$meta)))) {
-    stop("Each element of the list should have a meta element which is a list",
-         call. = FALSE)
-  }
-  
   # check if transcript is provided
   if (missing(reference_column)) {
     stop("Reference_column is missing. Please provide a valid reference_column argument",
@@ -600,4 +466,168 @@ get_samples_list_from_metadata <- function(input_list,filter_list) {
   
 
   return(output)
+}
+
+# functions which merges two nanotail_polya_data lists
+merge_nanotail_polya_data <- function(input1,input2,verbose=FALSE) {
+  
+  # check if input1 is provided
+  if (missing(input1)) {
+    stop("First list is missing. Please provide a valid list argument",
+         call. = FALSE)
+  }
+  
+  # check if input1 is a nanotail class
+  if (!is.nanotail_polya_data(input1)) {
+    stop("First input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
+         call. = FALSE)
+  }
+  
+  if(!validate_nanotail_polya_data(input1)) {
+    stop("First input is not a valid nanotail_polya_data list. Please load your data with read_polya_multiple()",
+         call. = FALSE)
+  }
+  
+  # check if input2 is provided
+  if (missing(input2)) {
+    stop("Second list is missing. Please provide a valid list argument",
+         call. = FALSE)
+  }
+  
+  # check if input2 is a nanotail class
+  if (!is.nanotail_polya_data(input2)) {
+    stop("Second input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
+         call. = FALSE)
+  }
+  
+  if(!validate_nanotail_polya_data(input2)) {
+    stop("Second input is not a valid nanotail_polya_data list. Please load your data with read_polya_multiple()",
+         call. = FALSE)
+  }
+
+  
+  # check if input1 and input2 metadata_tables has the same columns in the same order
+  # if not, add missing columns to metadata table, and store information about what is missing for each input
+  # if the same, just return variable identical_metadata=TRUE
+  identical_metadata=TRUE
+  
+  add_missing_columns <- function(input,missing_columns) {
+    for (i in 1:length(missing_columns)) {
+      input[[missing_columns[[i]]]] <- NA
+    }
+    return(input)
+  }
+  
+  if (!identical(names(input1$metadata_table),names(input2$metadata_table))) {
+    if (verbose) {
+      message("Metadata tables have different columns. Creating matching metadata columns")
+    }
+    identical_metadata=FALSE
+    missing_columns_input2 <- setdiff(names(input1$metadata_table),names(input2$metadata_table))
+    if (length(missing_columns_input2) > 0) {
+      
+      for (i in 1:length(missing_columns_input2)) {
+        input2$metadata_table[[missing_columns_input2[[i]]]] <- NA
+      }
+      
+      for (i in 1:length(input2$samples)) {
+        input2$samples[[i]]$meta <- add_missing_columns(input2$samples[[i]]$meta,missing_columns_input2)
+      }
+      
+    }
+    missing_columns_input1 <- setdiff(names(input2$metadata_table),names(input1$metadata_table))
+    if (length(missing_columns_input1) > 0) {
+      
+      for (i in 1:length(missing_columns_input1)) {
+        input1$metadata_table[[missing_columns_input1[[i]]]] <- NA
+      }
+      # add missing column also to each meta element in the input1
+      for (i in 1:length(input1$samples)) {
+        input1$samples[[i]]$meta <- add_missing_columns(input1$samples[[i]]$meta,missing_columns_input1)
+      }
+    }
+  }
+  
+  # Reorganize both metadata_tables from input1 and input2, so they have same order of columns
+  
+  if (!identical_metadata) {
+    input2$metadata_table <- input2$metadata_table[names(input1$metadata_table)]
+  }
+
+  # check if input1 and input2 have the same references objects
+  # if the same - just take the references from input1
+  # if not the same, merge two reference data.frames, leaving only unique rows
+  
+  if (identical(input1$references,input2$references)) {
+    output_references <- input1$references
+  }
+  else {
+    if (verbose) {
+      message("References are different. Merging")
+    }
+    output_references <- rbind(input1$references,input2$references)
+    output_references <- unique(output_references)
+  }
+  
+  
+  # check if there are element (by name) in input2 which are also present in input1
+  # If names are duplicated, check also the data element from both inputs for identity
+  # if the same, skip second sample, if different, assign different sample_id (suffix dupl) and issue the warning
+  # remember to use the new sample_id in the meta element
+  
+  if (verbose) {
+    message("Merging samples...")
+  }
+  if (any(names(input2$samples) %in% names(input1$samples))) {
+    for (i in 1:length(names(input2$samples))) {
+      if (names(input2$samples)[[i]] %in% names(input1$samples)) {
+        if (identical(input1$samples[[names(input2$samples)[[i]]]]$data,input2$samples[[names(input2$samples)[[i]]]]$data)) {
+          if (verbose) {
+            message(paste0("Sample ",names(input2$samples)[[i]]," is present in both inputs. Leaving only the first one."))
+          }
+          # remove duplicated sample from input2 metadata_table, by sample_id
+          input2$metadata_table <- input2$metadata_table[!input2$metadata_table$sample_id %in% names(input2$samples)[[i]],]
+          next
+        }
+        else {
+         
+          new_name <- paste0(names(input2$samples)[[i]],"_dupl")
+          #input2$samples[[new_name]] <- input2$samples[[names(input2$samples)[[i]]]]
+          if (verbose) {
+            message(paste0("Sample ",names(input2$samples)[[i]]," is already present in the first list, but the data are different. Assigning new sample_id: ",new_name))
+          }
+          input2$metadata_table[input2$metadata_table$sample_id %in% names(input2$samples)[[i]],]$sample_id <- new_name
+          names(input2$samples)[[i]] <- new_name
+          input2$samples[[i]]$meta$sample_id <- new_name
+          # assign also the new name duplicated sample from input2 metadata_table, by sample_id
+          
+        }
+      }
+    }
+  }
+  
+  
+  
+  # merge samples
+  output_samples <- c(input1$samples,input2$samples)
+
+  
+  # merge metadata_tables, removing duplicated samples
+  output_metadata_table <- rbind(input1$metadata_table,input2$metadata_table)
+  
+  
+  # return the merged list
+  
+  output <- input1
+  output$samples <- output_samples
+  output$metadata_table <- output_metadata_table
+  output$references <- output_references
+  
+  if (verbose) {
+    message("Merging completed")
+  }
+  
+  return(output)
+  
+  
 }
