@@ -1,4 +1,4 @@
-Package: nanotail
+Package: nanotail2
 Title: Analysis and visualisation of Nanopolish-based polyA lengths estimations
 Version: 0.1.0
 Authors@R: 
@@ -8,7 +8,7 @@ Authors@R:
            email = "p.krawczyk@ibb.waw.pl",
            comment = c(ORCID = "0000-0001-9531-1298"))
 Maintainer: <p.krawczyk@ibb.waw.pl>
-Description: Provides functions for visualization and exploratory analysis of Oxford Nanopore direct RNA seq and Nanopolish based polyA lengths predictions.
+Description: Provides functions for visualization and exploratory analysis of nanopore sequencing based polyA lengths predictions.
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -16,7 +16,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 biocViews:
 Depends: 
-    R (>= 3.5)
+    R (>= 4.0)
 Suggests: 
     annotables (>= 0.1.91),
     ggbiplot (>= 0.55),

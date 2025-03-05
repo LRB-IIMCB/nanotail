@@ -117,28 +117,27 @@ get_transcript_df_from_polya_list <- function(input_list, transcript_ids,transcr
 #' }
 #' 
 
-summarize_polya_list <- function(input_list,transcript_ids=NA,transcript_id_column="transcript",...) {
+summarize_polya_list <- function(input_polya,transcript_ids=NA,transcript_id_column="transcript",...) {
   # check if input_list is provided
-  if (missing(input_list)) {
-    stop("List is missing. Please provide a valid list argument",
+  if (missing(input_polya)) {
+    stop("Input is missing. Please provide a valid input argument",
          call. = FALSE)
   }
   
   # check if input_list is a nanotail class
-  if (!is.nanotail_polya_data(input_list)) {
+  if (!is.nanotail_polya_data(input_polya)) {
     stop("Input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
          call. = FALSE)
   }
 
- 
   
   if (!is.na(transcript_ids)) {
     message(paste0("Filtering transcripts by ",transcript_id_column," = ",transcript_ids))
-    input_list <- filter_polya_list_by_transcript(input_list,transcript_id_column=transcript_id_column,transcript_ids=transcript_ids,...)
+    input <- filter_polya_list_by_transcript(input_polya,transcript_id_column=transcript_id_column,transcript_ids=transcript_ids,...)
   }
   
   # calculate - number of elements in each data element, mean, median, sd, min, max of polya_length column
-  output <- lapply(input_list$samples, function(x) {
+  output <- lapply(input_polya$samples, function(x) {
     
     data <- x$data
     meta <- x$meta
@@ -148,7 +147,7 @@ summarize_polya_list <- function(input_list,transcript_ids=NA,transcript_id_colu
     sd_polya <- sd(data$polya_length)
     min_polya <- min(data$polya_length)
     max_polya <- max(data$polya_length)
-    if (!is.na(transcript_ids)) { # add transcript names to output, if was specified in function call.
+    if (!is.na(transcript_ids)) { # add transcript names to output, if were specified in function call.
       transcript_ids <- paste0(transcript_ids,sep=",")
       meta[[transcript_id_column]] <- transcript_ids
     }
@@ -166,7 +165,7 @@ summarize_polya_list <- function(input_list,transcript_ids=NA,transcript_id_colu
 
 #' Filter metadata from the list of poly(A) predictions
 #' 
-#' @param input_list a list - output of read_polya_multiple() with poly(A) predictions
+#' @param input_polya a list - output of read_polya_multiple() with poly(A) predictions
 #' @param metadata a character vector with names of metadata columns to keep
 #' 
 #' @return list with filtered metadata
@@ -179,14 +178,14 @@ summarize_polya_list <- function(input_list,transcript_ids=NA,transcript_id_colu
 #' 
 #' }
 #' 
-drop_polya_list_metadata <- function(input_list, metadata) {
+drop_polya_list_metadata <- function(input_polya, metadata) {
   # check if input_list is provided
-  if (missing(input_list)) {
-    stop("List is missing. Please provide a valid list argument",
+  if (missing(input_polya)) {
+    stop("Input is missing. Please provide a valid  argument",
          call. = FALSE)
   }
   # check if input_list is a nanotail class
-  if (!is.nanotail_polya_data(input_list)) {
+  if (!is.nanotail_polya_data(input_polya)) {
     stop("Input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
          call. = FALSE)
   }
@@ -206,16 +205,16 @@ drop_polya_list_metadata <- function(input_list, metadata) {
  
   
   # filter metadata columns of each element of the list
-  output_samples <- lapply(input_list$samples, function(x) {
+  output_samples <- lapply(input_polya$samples, function(x) {
     meta <- x$meta
     meta <- meta[metadata]
     return(list(data = x$data, meta = meta))
   })
   
-  input_list$samples <- output_samples
-  input_list$metadata_table <- input_list$metadata_table[metadata]
+  input_polya$samples <- output_samples
+  input_polya$metadata_table <- input_polya$metadata_table[metadata]
   
-  return(input_list)
+  return(input_polya)
 }
 
 
@@ -223,7 +222,7 @@ drop_polya_list_metadata <- function(input_list, metadata) {
 
 #' Filter data from the list of poly(A) predictions
 #' 
-#' @param input_list a list - output of read_polya_multiple() with poly(A) predictions
+#' @param input_polya a list - output of read_polya_multiple() with poly(A) predictions
 #' @param transcript a character vector or single character with transcript names to filter
 #' @param transcript_id_column a character vector with column name with transcript names
 #' 
@@ -236,14 +235,14 @@ drop_polya_list_metadata <- function(input_list, metadata) {
 #' filter_data(input_list,transcript=c("ACTB"),transcript_id_column="transcript")
 #' 
 #' }
-filter_polya_list_by_transcript <- function(input_list, transcript_ids,transcript_id_column="transcript",verbose=TRUE) {
+filter_polya_list_by_transcript <- function(input_polya, transcript_ids,transcript_id_column="transcript",verbose=TRUE) {
   # check if input_list is provided
-  if (missing(input_list)) {
+  if (missing(input_polya)) {
     stop("List is missing. Please provide a valid list argument",
          call. = FALSE)
   }
   # check if input_list is a nanotail class
-  if (!is.nanotail_polya_data(input_list)) {
+  if (!is.nanotail_polya_data(input_polya)) {
     stop("Input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
          call. = FALSE)
   }
@@ -268,14 +267,14 @@ filter_polya_list_by_transcript <- function(input_list, transcript_ids,transcrip
     }
   }
   else {
-    references_table <- input_list$references 
+    references_table <- input_polya$references 
     filtered_references <- references_table[references_table[[transcript_id_column]] %in% transcript_ids,]$reference
     if (verbose) {
       message(paste0("Got reference ids using provided transcript_ids stored in column",transcript_id_column))
     }
   }
   
-  output_samples <- lapply(input_list$samples, function(x) {
+  output_samples <- lapply(input_polya$samples, function(x) {
     data <- x$data
     meta <- x$meta
     data <- data[data[["reference"]] %in% filtered_references,]
@@ -285,8 +284,8 @@ filter_polya_list_by_transcript <- function(input_list, transcript_ids,transcrip
     }
   })
   
-  input_list$samples <- output_samples
-  return(input_list)
+  input_polya$samples <- output_samples
+  return(input_polya)
 
 }
 
@@ -294,9 +293,9 @@ filter_polya_list_by_transcript <- function(input_list, transcript_ids,transcrip
 #' Get references from the list of poly(A) predictions
 #' 
 #' @param input_list a list - output of read_polya_multiple() with poly(A) predictions
-#' @param reference_column a character vector with column name with references
+#' @param reference_column a character vector with column name with references (default reference)
 #' 
-#' @return list with references
+#' @return character vector with references
 #' @export
 #' 
 #' @examples
@@ -306,15 +305,15 @@ filter_polya_list_by_transcript <- function(input_list, transcript_ids,transcrip
 #' 
 #' }
 #'  
-get_references <- function(input_list,reference_column="reference") {
+get_references <- function(input_polya,reference_column="reference") {
 
   # check if input_list is provided
-  if (missing(input_list)) {
+  if (missing(input_polya)) {
     stop("List is missing. Please provide a valid list argument",
          call. = FALSE)
   }
   # check if input_list is a nanotail class
-  if (!is.nanotail_polya_data(input_list)) {
+  if (!is.nanotail_polya_data(input_polya)) {
     stop("Input should be provided as a nanotail_polya_data list. Please load your data with read_polya_multiple()",
          call. = FALSE)
   }
@@ -337,7 +336,7 @@ get_references <- function(input_list,reference_column="reference") {
   # combine all the references for each list elements into single vector, with all values unique
   # return the produced vector
   
-  output <- unique(unlist(lapply(input_list$samples, function(x) x$data[[reference_column]])))
+  output <- unique(unlist(lapply(input_polya$samples, function(x) x$data[[reference_column]])))
   return(output)
 }
 
@@ -345,7 +344,7 @@ get_references <- function(input_list,reference_column="reference") {
 
 #' Filter samples from the list of poly(A) predictions
 #' 
-#' @param input_list a list - output of read_polya_multiple() with poly(A) predictions
+#' @param input_polya a list - output of read_polya_multiple() with poly(A) predictions
 #' @param samples a character vector with sample names to keep
 #' 
 #' @return list with filtered samples
@@ -354,19 +353,19 @@ get_references <- function(input_list,reference_column="reference") {
 #' @examples
 #' \dontrun{
 #' 
-#' filter_polya_list_samples(input_list,samples=c("sample1","sample2"))
+#' filter_polya_list_samples(input_polya,samples=c("sample1","sample2"))
 #' 
 #' }
 #' 
-filter_polya_list_samples <- function(input_list, samples) {
+filter_polya_list_samples <- function(input_polya, samples) {
   
-  # check if inout_list is of nanotail_polya_data class
-  # if (!is.nanotail_polya_data(input_list)) {
-  #   stop("Input should be provided as a nanotail_polya_data class",
-  #        call. = FALSE)
-  # }
+  #check if inout_list is of nanotail_polya_data class
+  if (!is.nanotail_polya_data(input_list)) {
+    stop("Input should be provided as a nanotail_polya_data class",
+         call. = FALSE)
+  }
   
-  output_list <- input_list
+  output_list <- input_polya
   
   #if samples are provided, leave only the listed samples in tje output list
   if (!missing(samples)) {
@@ -377,14 +376,14 @@ filter_polya_list_samples <- function(input_list, samples) {
     }
     
     # check if each element of samples is present in meta column sample_name
-    if (!all(samples %in% input_list$samples[[1]]$meta$sample_name)) {
+    if (!all(samples %in% input_polya$samples[[1]]$meta$sample_name)) {
       stop("Some of the samples are not present in the input list",
            call. = FALSE)
     }
     
     message("Filtering")
     #filter the list, leaving only samples which are listed in the meta
-    output_samples <- lapply(input_list$samples, function(x) {
+    output_samples <- lapply(input_polya$samples, function(x) {
       meta <- x$meta
       
       if (meta$sample_name %in% samples) {

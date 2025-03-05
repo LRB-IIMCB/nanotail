@@ -173,7 +173,7 @@ parse_gencode_headers <- function(input_vector) {
          call. = FALSE)
   }
   
-  gencode_elements_no = sum(grepl("^ENST.*\\|ENSG.*\\|$",input_vector))
+  gencode_elements_no = sum(grepl("^ENS.*\\|ENS.*\\|.*$",input_vector))
   vector_length = length(input_vector)
   
   
@@ -296,3 +296,5 @@ annotate_polya_data <- function(input_data_frame,annotated_references) {
 
   return(input_data_frame)
 }
+
+

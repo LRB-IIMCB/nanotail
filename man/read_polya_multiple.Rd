@@ -4,19 +4,24 @@
 \alias{read_polya_multiple}
 \title{Reads multiple polyA predictions at once}
 \usage{
-read_polya_multiple(samples_table, ...)
+read_polya_multiple(
+  input_table,
+  verbose = TRUE,
+  process_references = TRUE,
+  ...
+)
 }
 \arguments{
+\item{...}{\itemize{
+\item additional parameters to pass to read_polya_single(), like gencode=(TRUE/FALSE)
+}}
+
 \item{samples_table}{data.frame or tibble containing samples metadata and paths to files.
 Should have at least two columns: \itemize{
 \item polya_path - containing path to the polya predictions file
 \item sample_name - unique name of the sample
 }
 Additional columns can provide metadata which will be included in the final table}
-
-\item{...}{\itemize{
-\item additional parameters to pass to read_polya_single(), like gencode=(TRUE/FALSE)
-}}
 }
 \value{
 a \link[tibble:tibble-package]{tibble} containing polyA predictions for all specified samples, with metadata provided in samples_table
@@ -25,6 +30,14 @@ stored as separate columns
 \description{
 This function can be used to load any number of files with polyA predictions with single invocation,
 allowing for metadata specification.
+}
+\examples{
+\dontrun{
+
+read_polya_multiple(example_sample_table)
+
+}
+
 }
 \seealso{
 \link{read_polya_single}

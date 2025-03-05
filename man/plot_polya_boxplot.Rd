@@ -5,16 +5,10 @@
 \title{Plots boxplot of estimated polya lengths}
 \usage{
 plot_polya_boxplot(
-  polya_data,
-  groupingFactor,
-  additional_grouping_factor = NA,
-  condition1 = NA,
-  condition2 = NA,
-  violin = FALSE,
-  add_points = FALSE,
-  max_points = 500,
-  auto_scale = T,
-  ...
+  input_list,
+  grouping_factor = "sample_name",
+  transcript,
+  transcript_id_column = "transcript"
 )
 }
 \arguments{
@@ -22,13 +16,13 @@ plot_polya_boxplot(
 
 \item{groupingFactor}{which factor to use for grouping}
 
-\item{additional_grouping_factor}{additional coloring grouping factor}
-
 \item{condition1}{First condition to include on the plot}
 
 \item{condition2}{Second condition to include on the plot}
 
 \item{violin}{Should violin plot be plotted instead of boxplot?}
+
+\item{additional_grouping_factor}{additional coloring grouping factor}
 
 \item{add_points}{should individual points be plotted (only if less than max_points). Represented as \link[ggforce]{geom_sina}}
 

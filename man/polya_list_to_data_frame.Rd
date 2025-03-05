@@ -13,5 +13,16 @@ polya_list_to_data_frame(input_list)
 data.frame (tibble)
 }
 \description{
-Convert a list with poly(A) predictions to long format data.frame with metadata columns (like in the original nanoTail)
+When data are loaded by the Nanotail package thery are stored as list of class "nanotail_polya_data",
+which is convenient for internal processing but not for further analysis, including visualization.
+This function converts the nanotail_polya_data list to a data.frame, containing all per-read poly(A) data
+with metadata stored as separate columns.
+}
+\examples{
+\dontrun{
+
+polya_list_to_data_frame(input_list)
+
+}
+
 }

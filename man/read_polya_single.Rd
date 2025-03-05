@@ -4,22 +4,38 @@
 \alias{read_polya_single}
 \title{Read Single Nanopolish polyA preditions from file}
 \usage{
-read_polya_single(polya_path, gencode = TRUE, sample_name = NA, dorado = FALSE)
+read_polya_single(
+  polya_path,
+  gencode = TRUE,
+  verbose = TRUE,
+  sample_name = NA,
+  input_type = "auto",
+  metadata,
+  additional_columns_to_keep
+)
 }
 \arguments{
 \item{polya_path}{path to nanopolish output file}
 
-\item{gencode}{are contig names GENCODE-compliant.
-Can get transcript names and ensembl_transcript IDs if reads were mapped for example to Gencode reference transcriptome}
-
 \item{sample_name}{sample name (optional), provided as a string.
 If specified will be included as an additional column sample_name.}
+
+\item{input_type}{type of input file. Can be one of: \itemize{
+\item nanopolish - nanopolish output
+\item dorado - dorado output
+\item tailfindr - tailfindr output
+\item auto - automatically detect input type
+}}
+
+\item{metadata}{additional columns to keep in the output table}
+
+\item{additional_columns_to_keep}{additional columns to keep in the output table}
 }
 \value{
 a \link[tibble:tibble-package]{tibble} with polya predictions
 }
 \description{
-This is the basic function used to import output from \code{nanopolish polya} to R
+This is the basic function used to import output from poly(A) prediction programs to R
 }
 \seealso{
 \link{read_polya_multiple}

@@ -4,7 +4,12 @@
 \alias{summarize_polya_list}
 \title{Summarize poly(A) predictions from a list}
 \usage{
-summarize_polya_list(input_list)
+summarize_polya_list(
+  input_list,
+  transcript_ids = NA,
+  transcript_id_column = "transcript",
+  ...
+)
 }
 \arguments{
 \item{input_list}{a list - output of read_polya_multiple() with poly(A) predictions}

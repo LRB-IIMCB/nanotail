@@ -3,15 +3,13 @@
 #' This is the basic function used to import output from poly(A) prediction programs to R
 #'
 #' @param polya_path path to nanopolish output file
-#' @param sample_name sample name (optional), provided as a string.
-#' If specified will be included as an additional column sample_name.
+#' #' If specified will be included as an additional column sample_name.
 #' @param input_type type of input file. Can be one of: \itemize{
 #' \item nanopolish - nanopolish output
 #' \item dorado - dorado output
 #' \item tailfindr - tailfindr output
 #' \item auto - automatically detect input type
 #' }
-#' @param metadata additional columns to keep in the output table
 #' @param additional_columns_to_keep additional columns to keep in the output table
 #' 
 #' @seealso \link{read_polya_multiple}
@@ -20,8 +18,9 @@
 #'
 #' @return a [tibble][tibble::tibble-package] with polya predictions
 #'
-read_polya_single <- function(polya_path, gencode = TRUE, verbose=TRUE, sample_name = NA, input_type = "auto", metadata,additional_columns_to_keep) {
-    # required asserts
+read_polya_single <- function(polya_path, verbose=TRUE, input_type = "auto", additional_columns_to_keep) {
+    
+  # required asserts
 
     #check if parameters are provided
     if (missing(polya_path)) {
@@ -55,9 +54,8 @@ read_polya_single <- function(polya_path, gencode = TRUE, verbose=TRUE, sample_n
     
     
     file_header <- data.table::fread(polya_path,nrows=0,header=T,data.table=F) # read first line to check colnames to determine input type
-    #message(file_header)
+   
     # auto-detect input type
-    
     if ((sum(c("reference","ref_start","pt") %in% colnames(file_header))==3)) {
         guessed_input_type <- "dorado_old" # for compatibility with previous versions of python script getting poly(A) from bams 
         if (verbose) {
@@ -122,12 +120,17 @@ read_polya_single <- function(polya_path, gencode = TRUE, verbose=TRUE, sample_n
     # create consistent output, with the same column names and order for each input type
     # colnames: c("readname","reference","ref_start","polya_length","qc_tag","mapq","read_type")
    
-    
     if (input_type=='dorado' | input_type=='dorado_old') {
       polya_data$qc_tag <- "PASS"
       polya_data$read_type <- NA
       # make proper order of columns
       if (!missing(additional_columns_to_keep)) {
+        if (ncol(polya_data) < (no_additional_columns+7)) {
+          warning(paste0("Additional columns to keep (" , no_additional_columns_to_keep,") are not present in the input file. Will add them and fill with NA"))
+          for (i in 1:no_additional_columns) {
+            polya_data[additional_columns_to_keep[i]] <- NA
+          }
+        }
         polya_data <- polya_data[,c(1,2,3,4,(no_additional_columns+6),5,(no_additional_columns+7),seq(6,(no_additional_columns+5)))]
       }
       else {
@@ -138,6 +141,12 @@ read_polya_single <- function(polya_path, gencode = TRUE, verbose=TRUE, sample_n
       polya_data$mapq <- NA
       polya_data$read_type <- NA
       if (!missing(additional_columns_to_keep)) {
+        if (ncol(polya_data) < (no_additional_columns+7)) {
+          warning(paste0("Additional columns to keep (" , no_additional_columns_to_keep,") are not present in the input file. Will add them and fill with NA"))
+          for (i in 1:no_additional_columns) {
+            polya_data[additional_columns_to_keep[i]] <- NA
+          }
+        }
         polya_data <- polya_data[,c(1,2,3,4,5,(no_additional_columns+6),(no_additional_columns+7),seq(6,(no_additional_columns+5)))]
       }
       else {
@@ -151,6 +160,12 @@ read_polya_single <- function(polya_path, gencode = TRUE, verbose=TRUE, sample_n
       polya_data$mapq <- NA
       # make reference second column and ref_start third column in polya_data using base R
       if (!missing(additional_columns_to_keep)) {
+        if (ncol(polya_data) < (no_additional_columns+7)) {
+          warning(paste0("Additional columns to keep (" , no_additional_columns_to_keep,") are not present in the input file. Will add them and fill with NA"))
+          for (i in 1:no_additional_columns) {
+            polya_data[additional_columns_to_keep[i]] <- NA
+          }
+        }
         polya_data <- polya_data[,c(1,5,(no_additional_columns+6),3,4,(no_additional_columns+7),2,seq(5,(no_additional_columns+4)))]
       }
       else {
@@ -166,30 +181,10 @@ read_polya_single <- function(polya_path, gencode = TRUE, verbose=TRUE, sample_n
     else {
       colnames(polya_data) <- c("read_id","reference","ref_start","polya_length","qc_tag","mapq","read_type")
     }
-    # transcript names, if mapping to gencode transcriptome
    
-
-    # if(!is.na(sample_name)) {
-    #   # set sample_name (if was set)
-    #   if ("sample_name" %in% colnames(polya_data)) {
-    #     warning("sample_name was provided in the input file. Overwriting with the provided one")
-    #   }
-    #   polya_data$sample_name = sample_name
-    #   polya_data$sample_name <- as.factor(polya_data$sample_name)
-    # }
 
     return(polya_data)
 }
-
-
-
-
-# with the input table, take the path column and use it to read the content of files paths provided in ths column
-# return the content of the files as a list
-# the name of the list elements should be the same as the sample_name column
-# each element should contain the data element with the content read from the file
-# another element of each list element should be named meta, and contain the metadata of the sample, taken from all remaining columns of the input table
-# use base R function, dplyr or purrr usage is prohibited
 
 #' Reads multiple polyA predictions at once
 #'
@@ -202,8 +197,9 @@ read_polya_single <- function(polya_path, gencode = TRUE, verbose=TRUE, sample_n
 #' \item polya_path - containing path to the polya predictions file
 #' \item sample_name - unique name of the sample
 #' }
-#' Additional columns can provide metadata which will be included in the final table
-#' @param ... - additional parameters to pass to read_polya_single(), like gencode=(TRUE/FALSE)
+#' @param verbose if TRUE, will print messages indicating progress
+#' @param process_references if TRUE, will process reference names and store them in the output 
+#' @param ... - additional parameters to pass to read_polya_single(), like additional_columns_to_keep
 #'
 #' @return a [tibble][tibble::tibble-package] containing polyA predictions for all specified samples, with metadata provided in samples_table
 #' stored as separate columns
@@ -224,6 +220,7 @@ read_polya_multiple <- function(input_table,verbose=TRUE,process_references=TRUE
     stop("Table is missing. Please provide a valid table argument",
          call. = FALSE)
   }
+  
   # check if input_table is a data.frame
   checkmate::assert_data_frame(input_table)
   # if (!is.data.frame(input_table)) {
@@ -232,9 +229,9 @@ read_polya_multiple <- function(input_table,verbose=TRUE,process_references=TRUE
   # }
   # 
   
-  # check if input_table has at least two columns
-  if (ncol(input_table) < 2) {
-    stop("Table should have at least two columns",
+  # check if input_table has at least 3 columns
+  if (ncol(input_table) < 3) {
+    stop("Table should have at least three columns",
          call. = FALSE)
   }
   
@@ -314,7 +311,7 @@ read_polya_multiple <- function(input_table,verbose=TRUE,process_references=TRUE
     if (verbose) {
       message("Processing references")
     }
-    output$references <- data.frame(reference=get_references(output,reference_column = "reference"),symbol=NA)
+    output$references <- data.frame(reference=get_references(input_polya=output,reference_column = "reference"),symbol=NA)
     
     # convert all reference_columns in data to factors
     for (i in 1:length(output$samples)) {
